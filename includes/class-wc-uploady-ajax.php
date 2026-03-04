@@ -1,0 +1,356 @@
+<?php
+
+/**
+ * AJAX request handlers.
+ *
+ * Handles all admin AJAX endpoints for image upload, product update,
+ * publish, and delete operations.
+ *
+ * @package WooCommerce_Uploady
+ * @since   1.0.0
+ */
+
+if (! defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Class WC_Uploady_Ajax
+ *
+ * @since 1.0.0
+ */
+class WC_Uploady_Ajax
+{
+
+    /**
+     * Product service instance.
+     *
+     * @var WC_Uploady_Product_Service
+     */
+    private $product_service;
+
+    /**
+     * Grouping engine instance.
+     *
+     * @var WC_Uploady_Grouping_Engine
+     */
+    private $grouping_engine;
+
+    /**
+     * Constructor.
+     *
+     * @param WC_Uploady_Product_Service $product_service Product service.
+     * @param WC_Uploady_Grouping_Engine $grouping_engine Grouping engine.
+     */
+    public function __construct($product_service, $grouping_engine)
+    {
+        $this->product_service = $product_service;
+        $this->grouping_engine = $grouping_engine;
+    }
+
+    /**
+     * Handle image upload and product creation.
+     *
+     * Receives uploaded files, attaches them to the media library,
+     * groups them by filename, and creates draft products.
+     */
+    public function handle_upload_images()
+    {
+        $this->verify_request();
+
+        if (empty($_FILES['images'])) {
+            wp_send_json_error(array('message' => __('No images uploaded.', 'woocommerce-uploady')));
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+
+        $files         = $this->normalize_files_array($_FILES['images']);
+        $attachment_ids = array();
+
+        foreach ($files as $file) {
+            // Construct a single-file $_FILES entry for media_handle_sideload.
+            $file_array = array(
+                'name'     => sanitize_file_name($file['name']),
+                'type'     => $file['type'],
+                'tmp_name' => $file['tmp_name'],
+                'error'    => $file['error'],
+                'size'     => $file['size'],
+            );
+
+            // Validate file type.
+            $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name']);
+            if (! $check['type'] || ! in_array($check['type'], $this->allowed_mime_types(), true)) {
+                continue;
+            }
+
+            $attachment_id = media_handle_sideload($file_array, 0);
+
+            if (is_wp_error($attachment_id)) {
+                continue;
+            }
+
+            $attachment_ids[] = $attachment_id;
+        }
+
+        if (empty($attachment_ids)) {
+            wp_send_json_error(array('message' => __('No valid images were uploaded.', 'woocommerce-uploady')));
+        }
+
+        // Group images and create products.
+        $groups   = $this->grouping_engine->group($attachment_ids);
+        $products = array();
+
+        foreach ($groups as $group) {
+            $product = $this->product_service->create_draft_product(
+                $group['title'],
+                $group['featured'],
+                $group['gallery']
+            );
+
+            if (! is_wp_error($product)) {
+                $products[] = $this->product_service->format_product_data($product);
+            }
+        }
+
+        wp_send_json_success(array('products' => $products));
+    }
+
+    /**
+     * Handle inline product field update.
+     */
+    public function handle_update_product()
+    {
+        $this->verify_request();
+
+        $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
+        $field      = isset($_POST['field']) ? sanitize_text_field(wp_unslash($_POST['field'])) : '';
+
+        // Allow HTML for description, sanitize everything else as plain text.
+        if ( 'description' === $field ) {
+            $value = isset($_POST['value']) ? wp_kses_post(wp_unslash($_POST['value'])) : '';
+        } else {
+            $value = isset($_POST['value']) ? sanitize_text_field(wp_unslash($_POST['value'])) : '';
+        }
+
+        if (! $product_id || ! $field) {
+            wp_send_json_error(array('message' => __('Invalid request.', 'woocommerce-uploady')));
+        }
+
+        $result = $this->product_service->update_product_field($product_id, $field, $value);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        }
+
+        wp_send_json_success(array('message' => __('Saved.', 'woocommerce-uploady')));
+    }
+
+    /**
+     * Handle publishing all valid draft products.
+     */
+    public function handle_publish_all()
+    {
+        $this->verify_request();
+
+        $product_ids = isset($_POST['product_ids']) ? array_map('absint', (array) $_POST['product_ids']) : array();
+
+        if (empty($product_ids)) {
+            wp_send_json_error(array('message' => __('No products to publish.', 'woocommerce-uploady')));
+        }
+
+        $published = array();
+        $failed    = array();
+
+        foreach ($product_ids as $product_id) {
+            $result = $this->product_service->publish_product($product_id);
+
+            if (is_wp_error($result)) {
+                $failed[] = array(
+                    'id'      => $product_id,
+                    'message' => $result->get_error_message(),
+                );
+            } else {
+                $published[] = $product_id;
+            }
+        }
+
+        wp_send_json_success(array(
+            'published' => $published,
+            'failed'    => $failed,
+        ));
+    }
+
+    /**
+     * Handle deleting a draft product.
+     */
+    public function handle_delete_product()
+    {
+        $this->verify_request();
+
+        $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
+
+        if (! $product_id) {
+            wp_send_json_error(array('message' => __('Invalid product ID.', 'woocommerce-uploady')));
+        }
+
+        $result = $this->product_service->delete_product($product_id);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        }
+
+        wp_send_json_success(array('message' => __('Product deleted.', 'woocommerce-uploady')));
+    }
+
+    /**
+     * Handle loading existing draft products.
+     */
+    public function handle_load_products()
+    {
+        $this->verify_request();
+
+        $products = $this->product_service->get_draft_products();
+
+        wp_send_json_success(array('products' => $products));
+    }
+
+    /**
+     * Handle uploading a single image file.
+     *
+     * Returns the attachment ID so the client can collect IDs
+     * and call create_products after all uploads finish.
+     */
+    public function handle_upload_single_image()
+    {
+        $this->verify_request();
+
+        if (empty($_FILES['image'])) {
+            wp_send_json_error(array('message' => __('No image provided.', 'woocommerce-uploady')));
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+
+        $file = $_FILES['image'];
+
+        // Validate file type.
+        $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name']);
+        if (! $check['type'] || ! in_array($check['type'], $this->allowed_mime_types(), true)) {
+            wp_send_json_error(array('message' => __('Invalid file type.', 'woocommerce-uploady')));
+        }
+
+        $file_array = array(
+            'name'     => sanitize_file_name($file['name']),
+            'type'     => $file['type'],
+            'tmp_name' => $file['tmp_name'],
+            'error'    => $file['error'],
+            'size'     => $file['size'],
+        );
+
+        $attachment_id = media_handle_sideload($file_array, 0);
+
+        if (is_wp_error($attachment_id)) {
+            wp_send_json_error(array('message' => $attachment_id->get_error_message()));
+        }
+
+        wp_send_json_success(array(
+            'attachment_id' => $attachment_id,
+            'filename'      => sanitize_file_name($file['name']),
+        ));
+    }
+
+    /**
+     * Handle grouping and creating products from already-uploaded attachment IDs.
+     */
+    public function handle_create_products()
+    {
+        $this->verify_request();
+
+        $attachment_ids = isset($_POST['attachment_ids']) ? array_map('absint', (array) $_POST['attachment_ids']) : array();
+
+        if (empty($attachment_ids)) {
+            wp_send_json_error(array('message' => __('No images provided.', 'woocommerce-uploady')));
+        }
+
+        $groups   = $this->grouping_engine->group($attachment_ids);
+        $products = array();
+
+        foreach ($groups as $group) {
+            $product = $this->product_service->create_draft_product(
+                $group['title'],
+                $group['featured'],
+                $group['gallery']
+            );
+
+            if (! is_wp_error($product)) {
+                $products[] = $this->product_service->format_product_data($product);
+            }
+        }
+
+        wp_send_json_success(array('products' => $products));
+    }
+
+    /**
+     * Verify nonce and capability for AJAX requests.
+     */
+    private function verify_request()
+    {
+        if (! check_ajax_referer('wc_uploady_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed.', 'woocommerce-uploady')), 403);
+        }
+
+        if (! current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'woocommerce-uploady')), 403);
+        }
+    }
+
+    /**
+     * Normalize the multiple files array from PHP's messy format.
+     *
+     * Converts $_FILES['images'] from { name: [...], tmp_name: [...] }
+     * to [ { name, tmp_name, ... }, ... ].
+     *
+     * @param array $files $_FILES array for the field.
+     * @return array Normalized array of individual file arrays.
+     */
+    private function normalize_files_array($files)
+    {
+        $normalized = array();
+
+        if (! is_array($files['name'])) {
+            return array($files);
+        }
+
+        $count = count($files['name']);
+
+        for ($i = 0; $i < $count; $i++) {
+            $normalized[] = array(
+                'name'     => $files['name'][$i],
+                'type'     => $files['type'][$i],
+                'tmp_name' => $files['tmp_name'][$i],
+                'error'    => $files['error'][$i],
+                'size'     => $files['size'][$i],
+            );
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Allowed MIME types for product images.
+     *
+     * @return array
+     */
+    private function allowed_mime_types()
+    {
+        return array(
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+        );
+    }
+}

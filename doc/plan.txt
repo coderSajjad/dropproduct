@@ -1,0 +1,412 @@
+Free Version Features:
+
+🎯 Core Promise
+Turn Product Images into Draft Products in Seconds — Without CSV or Page Reloads
+Designed for store owners who want a faster, cleaner way to create simple WooCommerce products from images.
+
+✅ FREE FEATURES
+
+1️⃣ Drag & Drop Bulk Image Upload
+Large dropzone area inside WooCommerce admin
+
+
+Upload multiple images at once
+
+
+Real-time progress indicator
+
+
+Instant draft product creation in grid
+
+
+
+2️⃣ Smart Filename → Product Title
+Automatically converts image filename into product title
+
+
+Removes hyphens and underscores
+
+
+Capitalizes words properly
+
+
+Cleans common file suffixes
+
+
+Example:
+ vintage-leather-bag.jpg
+ → Vintage Leather Bag
+
+3️⃣ Basic Intelligent Gallery Grouping
+Automatically groups images with the same base name
+
+
+First image becomes Featured Image
+
+
+Remaining images become Gallery Images
+
+
+Example:
+ shoe-1.jpg
+ shoe-2.jpg
+ → One product with gallery assigned
+
+4️⃣ Zero-Reload Grid Editor (SPA Style)
+Inline editing directly inside the table for:
+Product Title
+
+
+Regular Price
+
+
+SKU
+
+
+Stock Status
+
+
+Single Category Selection
+
+
+No page reload required.
+
+5️⃣ Auto-Save via AJAX
+Saves data automatically when user exits a field
+
+
+No manual “Update” click required
+
+
+Smooth editing workflow
+
+
+
+6️⃣ Hover Image Preview
+Hover over thumbnail to see larger preview
+
+
+Helps verify correct product before editing
+
+
+
+7️⃣ Batch Publish Button
+Publish all valid draft products at once
+
+
+One-click “Go Live” action
+
+
+
+8️⃣ Required Field Highlighting
+Missing price highlighted visually
+
+
+Basic required field warning
+
+
+Prevent accidental publishing of incomplete products
+
+
+
+9️⃣ Simple Product Support
+Create and edit simple products only
+
+
+Basic stock management
+
+
+Default WooCommerce compatibility
+
+
+
+🚫 FREE VERSION LIMITATIONS
+The Free version does not include:
+No variable product support
+
+
+No advanced filename grouping rules
+
+
+No multi-row bulk editing tools
+
+
+No advanced validation dashboard
+
+
+No SEO field editing
+
+
+No upload session tracking
+
+
+No performance tuning controls
+
+
+No activity logs
+
+
+No attribute management
+
+
+No advanced template presets
+
+
+
+🎯 Ideal Free Users
+Small store owners
+
+
+New WooCommerce users
+
+
+Low-inventory shops
+
+
+Users testing workflow improvements
+
+
+Businesses creating simple products only
+
+
+
+Free Version Purpose:
+ Deliver visible speed and workflow improvement while encouraging serious stores to upgrade for advanced operations.
+
+
+
+ pro version featire: 
+ WooCommerce Uploady – Pro Version
+🚀 Core Promise
+Professional Catalog Operations Engine for WooCommerce
+Designed for serious store owners, agencies, and high-inventory businesses that need speed, control, and intelligent automation.
+
+🔥 PRO FEATURES
+
+1️⃣ Advanced Smart Image Engine
+• Custom Grouping Rules
+Define grouping logic based on filename patterns
+
+
+Ignore common words (front, back, img, final, etc.)
+
+
+Remove numeric suffixes automatically
+
+
+Custom prefix/suffix stripping
+
+
+Flexible grouping behavior control
+
+
+• Intelligent Variation Detection
+Detect variations from filename patterns (e.g., size, color)
+
+
+Auto-create variable products
+
+
+Auto-generate attributes from filenames
+
+
+Support for multiple variation attributes
+
+
+Automatic variation image assignment
+
+
+
+2️⃣ Full Variable Product Support
+Create and manage variable products inside the grid
+
+
+Edit variation prices
+
+
+Manage stock per variation
+
+
+Assign variation-specific images
+
+
+Inline attribute management
+
+
+
+3️⃣ Advanced Bulk Editing Tools
+Multi-row selection
+
+
+Bulk set price
+
+
+Bulk assign categories
+
+
+Bulk update stock status
+
+
+Bulk apply tax class
+
+
+Bulk apply shipping class
+
+
+Quick duplicate product row
+
+
+
+4️⃣ Advanced Validation Dashboard
+Before publishing, display a professional summary:
+Missing prices
+
+
+Missing categories
+
+
+Duplicate SKUs
+
+
+Empty titles
+
+
+Invalid or broken images
+
+
+Variation conflicts
+
+
+
+5️⃣ SEO & Optimization Tools
+Editable product slug
+
+
+Meta description field (Yoast & RankMath compatible)
+
+
+Auto-generate image ALT text from filename
+
+
+Automatic SEO-friendly title formatting
+
+
+Basic keyword consistency alerts
+
+
+
+6️⃣ Upload Session Management
+Track upload sessions
+
+
+View products created per session
+
+
+Filter by batch ID
+
+
+Delete or rollback specific sessions
+
+
+Upload history logs
+
+
+
+7️⃣ Performance & Processing Control
+Adjustable batch processing size
+
+
+Background processing system
+
+
+Safe mode for low-memory hosting
+
+
+Upload retry mechanism
+
+
+Server resource monitoring indicator
+
+
+
+8️⃣ Template & Preset System
+Save default category
+
+
+Save default stock status
+
+
+Save default tax class
+
+
+Save default shipping class
+
+
+Apply preset settings to entire batch instantly
+
+
+
+9️⃣ Activity & Change Log
+Track user edits
+
+
+Monitor publish actions
+
+
+Log bulk operations
+
+
+Admin-level activity transparency
+
+
+
+🔟 Priority Support & Updates
+Premium support channel
+
+
+Faster response time
+
+
+Continuous feature updates
+
+
+Compatibility updates with new WooCommerce releases
+
+
+
+💰 PRO PLAN STRUCTURE
+Single Site License
+1 Website
+
+
+1 Year Updates
+
+
+1 Year Premium Support
+
+
+5 Site License
+Up to 5 Websites
+
+
+1 Year Updates
+
+
+1 Year Premium Support
+
+
+20 Site / Agency License
+Up to 20 Websites
+
+
+1 Year Updates
+
+
+1 Year Premium Support
+
+
+Agency-level usage rights
+
+
+
+
