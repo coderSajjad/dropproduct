@@ -2,7 +2,7 @@
 
 ## What Does It Do?
 
-The **Publish All** button publishes all your draft products at once, making them live on your WooCommerce store. Before publishing, WooUpload checks that required fields are filled in.
+The **Publish All** button publishes all your draft products at once, making them live on your WooCommerce store. Before publishing, Uploady checks that required fields are filled in.
 
 ---
 
@@ -49,7 +49,7 @@ Simply fill in the highlighted fields. The red border disappears once the field 
 Once published, products are:
 - ✅ **Live on your store** — customers can see and buy them
 - ✅ **Visible in WooCommerce → Products**
-- ✅ **Marked as "Publish"** in the WooUpload grid
+- ✅ **Marked as "Publish"** in the Uploady grid
 - The row stays in the grid for reference
 
 ---
@@ -65,4 +65,4 @@ The header shows a **"Drafts: X"** counter that tracks how many unpublished prod
 - Set regular prices for all products before clicking Publish All
 - Products that fail validation stay as drafts — you can fix them and try again
 - You can also edit products in WooCommerce's standard editor after publishing
-- If you want to publish only certain products, use **WooUpload Pro's** validation dashboard which lets you publish selectively
+- If you want to publish only certain products, use **Uploady Pro's** validation dashboard which lets you publish selectively

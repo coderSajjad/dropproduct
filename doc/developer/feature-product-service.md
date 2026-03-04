@@ -24,7 +24,7 @@ Provide a clean service layer for WooCommerce product CRUD operations, supportin
 | `update_product_field()` | `($product_id, $field, $value)` | Updates a single field on a product |
 | `publish_product()` | `($product_id)` | Validates and publishes a product |
 | `delete_product()` | `($product_id, $force = true)` | Force-deletes a product (bypasses trash) |
-| `get_draft_products()` | `()` | Returns all WooUpload draft + published products |
+| `get_draft_products()` | `()` | Returns all Uploady draft + published products |
 | `format_product_data()` | `($product)` | Converts `WC_Product` to grid-ready array |
 
 ### Private Methods
@@ -132,7 +132,7 @@ $products = wc_get_products(array(
 ));
 ```
 
-**Note:** This retrieves both draft and published products created by WooUpload, ordered newest-first.
+**Note:** This retrieves both draft and published products created by Uploady, ordered newest-first.
 
 ---
 

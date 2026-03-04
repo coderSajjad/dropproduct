@@ -2,7 +2,7 @@
 
 ## Plugin Structure
 
-WooUpload is a WordPress plugin that replaces the default WooCommerce product creation workflow with a high-performance SPA-style grid, enabling bulk product creation from images.
+Uploady is a WordPress plugin that replaces the default WooCommerce product creation workflow with a high-performance SPA-style grid, enabling bulk product creation from images.
 
 ---
 
@@ -10,7 +10,7 @@ WooUpload is a WordPress plugin that replaces the default WooCommerce product cr
 
 ```
 ┌──────────────────────────────────────────────────┐
-│          woocommerce-uploady.php                  │
+│          uploady.php                  │
 │  (Entry Point — constants, HPOS, boot)            │
 └─────────────────────┬────────────────────────────┘
                       │
@@ -41,8 +41,8 @@ WooUpload is a WordPress plugin that replaces the default WooCommerce product cr
 ## File Structure
 
 ```
-woocommerce-uploady/
-├── woocommerce-uploady.php          # Entry point, constants, HPOS
+uploady/
+├── uploady.php          # Entry point, constants, HPOS
 ├── uninstall.php                     # Cleanup on uninstall
 ├── readme.txt                        # WordPress.org readme
 ├── includes/
@@ -107,15 +107,15 @@ All inputs are sanitized with `sanitize_text_field()`, `absint()`, `wc_format_de
 
 ## Product Tracking
 
-Products created by WooUpload are tagged with `_wc_uploady_product` meta key (value `'1'`). This allows the plugin to:
-- Load only its own draft/published products on the WooUpload page
+Products created by Uploady are tagged with `_wc_uploady_product` meta key (value `'1'`). This allows the plugin to:
+- Load only its own draft/published products on the Uploady page
 - Avoid interfering with products created through other means
 
 ---
 
 ## Boot Sequence
 
-1. WordPress loads `woocommerce-uploady.php`
+1. WordPress loads `uploady.php`
 2. Constants defined: `WC_UPLOADY_VERSION`, `WC_UPLOADY_PLUGIN_DIR`, `WC_UPLOADY_PLUGIN_URL`, `WC_UPLOADY_PLUGIN_BASENAME`
 3. HPOS compatibility declared via `before_woocommerce_init`
 4. On `plugins_loaded`: checks WooCommerce is active, then creates `WC_Uploady` and calls `run()`
@@ -139,7 +139,7 @@ Products created by WooUpload are tagged with `_wc_uploady_product` meta key (va
 
 ## Frontend Architecture
 
-The frontend is a single JavaScript object (`WooUpload`) inside an IIFE, structured as:
+The frontend is a single JavaScript object (`Uploady`) inside an IIFE, structured as:
 
 | Method | Purpose |
 |--------|---------|
@@ -147,7 +147,7 @@ The frontend is a single JavaScript object (`WooUpload`) inside an IIFE, structu
 | `cache()` | Caches all DOM element references |
 | `cacheModal()` | Caches description modal elements |
 | `bindEvents()` | Sets up all event listeners (drag/drop, blur save, delete, publish, hover preview, description modal) |
-| `loadExistingProducts()` | AJAX call to load existing WooUpload Products on page load |
+| `loadExistingProducts()` | AJAX call to load existing Uploady Products on page load |
 | `uploadFiles(files)` | Builds `FormData` from files, sends AJAX upload with progress |
 | `renderProducts(products)` | Renders product rows into the grid table |
 | `buildRow(product)` | Generates HTML for a single product table row |

@@ -133,7 +133,7 @@ All use `wp_ajax_{action}`. Nonce key: `wc_uploady_nonce`. Capability: `manage_w
 | `wc_uploady_update_product` | `WC_Uploady_Ajax::handle_update_product()` | Update single field on a product |
 | `wc_uploady_publish_all` | `WC_Uploady_Ajax::handle_publish_all()` | Validate and publish multiple products |
 | `wc_uploady_delete_product` | `WC_Uploady_Ajax::handle_delete_product()` | Delete a product |
-| `wc_uploady_load_products` | `WC_Uploady_Ajax::handle_load_products()` | Load existing WooUpload Products |
+| `wc_uploady_load_products` | `WC_Uploady_Ajax::handle_load_products()` | Load existing Uploady Products |
 
 ---
 

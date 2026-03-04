@@ -2,7 +2,7 @@
 
 ## What Does It Do?
 
-Upload product images by dragging them onto the WooUpload page. Each image automatically becomes a WooCommerce product — no forms, no manual data entry needed.
+Upload product images by dragging them onto the Uploady page. Each image automatically becomes a WooCommerce product — no forms, no manual data entry needed.
 
 ---
 
@@ -11,7 +11,7 @@ Upload product images by dragging them onto the WooUpload page. Each image autom
 ### Method 1: Drag & Drop
 1. Open a folder with your product images
 2. Select the images you want to upload
-3. Drag them onto the **dropzone area** on the WooUpload page
+3. Drag them onto the **dropzone area** on the Uploady page
 4. Drop them — products are created instantly!
 
 ### Method 2: Browse Files

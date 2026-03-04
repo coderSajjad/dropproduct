@@ -63,7 +63,7 @@ class WC_Uploady_Product_Service
         $product_id = $product->save();
 
         if (! $product_id) {
-            return new WP_Error('create_failed', __('Failed to create product.', 'woocommerce-uploady'));
+            return new WP_Error('create_failed', __('Failed to create product.', 'wooupload'));
         }
 
         /**
@@ -90,7 +90,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'woocommerce-uploady'));
+            return new WP_Error('invalid_product', __('Product not found.', 'wooupload'));
         }
 
         switch ($field) {
@@ -163,7 +163,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'woocommerce-uploady'));
+            return new WP_Error('invalid_product', __('Product not found.', 'wooupload'));
         }
 
         $errors = $this->validate_for_publish($product);
@@ -198,7 +198,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'woocommerce-uploady'));
+            return new WP_Error('invalid_product', __('Product not found.', 'wooupload'));
         }
 
         $product->delete($force);
@@ -226,6 +226,7 @@ class WC_Uploady_Product_Service
             'limit'      => -1,
             'orderby'    => 'date',
             'order'      => 'DESC',
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required to retrieve only Uploady-created products.
             'meta_query' => array(
                 array(
                     'key'   => self::META_KEY,
@@ -295,11 +296,11 @@ class WC_Uploady_Product_Service
         $errors = array();
 
         if (empty(trim($product->get_name()))) {
-            $errors[] = __('Title is required.', 'woocommerce-uploady');
+            $errors[] = __('Title is required.', 'wooupload');
         }
 
         if ('' === $product->get_regular_price()) {
-            $errors[] = __('Price is required.', 'woocommerce-uploady');
+            $errors[] = __('Price is required.', 'wooupload');
         }
 
         /**

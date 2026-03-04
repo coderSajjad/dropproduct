@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: WooUpload – Bulk Product Creator
- * Plugin URI:  https://wordpress.org/plugins/woocommerce-uploady/
- * Description: The New Era of Fast Product Management — bulk create WooCommerce products from images with a drag & drop SPA-style grid.
+ * Plugin Name: Uploady – Bulk Product Uploader for WooCommerce
+ * Plugin URI:  https://wordpress.org/plugins/uploady/
+ * Description: The fastest way to bulk create WooCommerce products from images with drag & drop, smart grouping, inline editing, and one-click publish.
  * Version:     1.0.0
  * Author:      Sajjad Hossain
  * Author URI:  https://github.com/coderSajjad
  * License:     GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: woocommerce-uploady
+ * Text Domain: wooupload
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
@@ -70,8 +70,8 @@ function wc_uploady_missing_wc_notice() {
 			<?php
 			printf(
 				/* translators: %s: WooCommerce plugin name */
-				esc_html__( '%1$s requires %2$s to be installed and active.', 'woocommerce-uploady' ),
-				'<strong>WooUpload – Bulk Product Creator</strong>',
+				esc_html__( '%1$s requires %2$s to be installed and active.', 'wooupload' ),
+				'<strong>Uploady – Bulk Product Uploader for WooCommerce</strong>',
 				'<strong>WooCommerce</strong>'
 			);
 			?>
