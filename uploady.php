@@ -8,7 +8,7 @@
  * Author URI:  https://github.com/coderSajjad
  * License:     GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: wooupload
+ * Text Domain: uploady
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
@@ -70,7 +70,7 @@ function wc_uploady_missing_wc_notice() {
 			<?php
 			printf(
 				/* translators: %s: WooCommerce plugin name */
-				esc_html__( '%1$s requires %2$s to be installed and active.', 'wooupload' ),
+				esc_html__( '%1$s requires %2$s to be installed and active.', 'uploady' ),
 				'<strong>Uploady – Bulk Product Uploader for WooCommerce</strong>',
 				'<strong>WooCommerce</strong>'
 			);

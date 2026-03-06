@@ -16,18 +16,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="wc-uploady-header__left">
 			<h1 class="wc-uploady-title">
 				<span class="dashicons dashicons-upload"></span>
-				<?php esc_html_e( 'wooupload', 'wooupload' ); ?>
+				<?php esc_html_e( 'Uploady', 'uploady' ); ?>
 			</h1>
-			<span class="wc-uploady-tagline"><?php esc_html_e( 'The New Era of Fast Product Management', 'wooupload' ); ?></span>
+			<span class="wc-uploady-tagline"><?php esc_html_e( 'The New Era of Fast Product Management', 'uploady' ); ?></span>
 		</div>
 		<div class="wc-uploady-header__right">
 			<span class="wc-uploady-count">
-				<?php esc_html_e( 'Drafts:', 'wooupload' ); ?>
+				<?php esc_html_e( 'Drafts:', 'uploady' ); ?>
 				<strong id="wc-uploady-draft-count">0</strong>
 			</span>
 			<button type="button" id="wc-uploady-publish-all" class="button button-primary button-large" disabled>
 				<span class="dashicons dashicons-yes-alt"></span>
-				<?php esc_html_e( 'Publish All', 'wooupload' ); ?>
+				<?php esc_html_e( 'Publish All', 'uploady' ); ?>
 			</button>
 		</div>
 	</div>
@@ -49,17 +49,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="wc-uploady-dropzone__inner">
 			<span class="dashicons dashicons-cloud-upload"></span>
 			<p class="wc-uploady-dropzone__text">
-				<?php esc_html_e( 'Drag & drop product images here', 'wooupload' ); ?>
+				<?php esc_html_e( 'Drag & drop product images here', 'uploady' ); ?>
 			</p>
 			<p class="wc-uploady-dropzone__subtext">
-				<?php esc_html_e( 'or', 'wooupload' ); ?>
+				<?php esc_html_e( 'or', 'uploady' ); ?>
 			</p>
 			<button type="button" class="button button-secondary" id="wc-uploady-browse-btn">
-				<?php esc_html_e( 'Browse Files', 'wooupload' ); ?>
+				<?php esc_html_e( 'Browse Files', 'uploady' ); ?>
 			</button>
 			<input type="file" id="wc-uploady-file-input" multiple accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" />
 			<p class="wc-uploady-dropzone__hint">
-				<?php esc_html_e( 'JPEG, PNG, GIF, WebP — images with similar names are grouped automatically', 'wooupload' ); ?>
+				<?php esc_html_e( 'JPEG, PNG, GIF, WebP — images with similar names are grouped automatically', 'uploady' ); ?>
 			</p>
 		</div>
 		<div class="wc-uploady-dropzone__progress" id="wc-uploady-upload-progress" style="display:none;">
@@ -85,16 +85,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<table class="wc-uploady-grid widefat" id="wc-uploady-grid">
 			<thead>
 				<tr>
-					<th class="wc-uploady-col-image"><?php esc_html_e( 'Image', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-title"><?php esc_html_e( 'Title', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-desc"><?php esc_html_e( 'Desc', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-price"><?php esc_html_e( 'Regular Price', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-sale-price"><?php esc_html_e( 'Sale Price', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-sku"><?php esc_html_e( 'SKU', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-stock"><?php esc_html_e( 'Stock', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-category"><?php esc_html_e( 'Category', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-status"><?php esc_html_e( 'Status', 'wooupload' ); ?></th>
-					<th class="wc-uploady-col-actions"><?php esc_html_e( 'Actions', 'wooupload' ); ?></th>
+					<th class="wc-uploady-col-image"><?php esc_html_e( 'Image', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-title"><?php esc_html_e( 'Title', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-desc"><?php esc_html_e( 'Desc', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-price"><?php esc_html_e( 'Regular Price', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-sale-price"><?php esc_html_e( 'Sale Price', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-sku"><?php esc_html_e( 'SKU', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-stock"><?php esc_html_e( 'Stock', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-category"><?php esc_html_e( 'Category', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-status"><?php esc_html_e( 'Status', 'uploady' ); ?></th>
+					<th class="wc-uploady-col-actions"><?php esc_html_e( 'Actions', 'uploady' ); ?></th>
 				</tr>
 			</thead>
 			<tbody id="wc-uploady-grid-body">
@@ -102,7 +102,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<td colspan="10">
 						<div class="wc-uploady-empty-state">
 							<span class="dashicons dashicons-format-gallery"></span>
-							<p><?php esc_html_e( 'No draft products yet. Upload images to get started.', 'wooupload' ); ?></p>
+							<p><?php esc_html_e( 'No draft products yet. Upload images to get started.', 'uploady' ); ?></p>
 						</div>
 					</td>
 				</tr>
@@ -120,21 +120,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="wc-uploady-desc-modal__header">
 			<h3>
 				<span class="dashicons dashicons-edit"></span>
-				<?php esc_html_e( 'Product Description', 'wooupload' ); ?>
+				<?php esc_html_e( 'Product Description', 'uploady' ); ?>
 			</h3>
 			<button type="button" class="wc-uploady-desc-modal__close" id="wc-uploady-desc-close">
 				<span class="dashicons dashicons-no-alt"></span>
 			</button>
 		</div>
 		<div class="wc-uploady-desc-modal__body">
-			<textarea id="wc-uploady-desc-textarea" placeholder="<?php esc_attr_e( 'Enter product description…', 'wooupload' ); ?>"></textarea>
+			<textarea id="wc-uploady-desc-textarea" placeholder="<?php esc_attr_e( 'Enter product description…', 'uploady' ); ?>"></textarea>
 		</div>
 		<div class="wc-uploady-desc-modal__footer">
 			<button type="button" class="button button-secondary" id="wc-uploady-desc-cancel">
-				<?php esc_html_e( 'Cancel', 'wooupload' ); ?>
+				<?php esc_html_e( 'Cancel', 'uploady' ); ?>
 			</button>
 			<button type="button" class="button button-primary" id="wc-uploady-desc-save">
-				<?php esc_html_e( 'Save', 'wooupload' ); ?>
+				<?php esc_html_e( 'Save', 'uploady' ); ?>
 			</button>
 		</div>
 	</div>

@@ -34,8 +34,8 @@ class WC_Uploady_Admin
 	 */
 	public function add_menu_page() {
 		$this->hook_suffix = add_menu_page(
-			__( 'wooupload', 'wooupload' ),
-			__( 'wooupload', 'wooupload' ),
+			__( 'Uploady', 'uploady' ),
+			__( 'Uploady', 'uploady' ),
 			'manage_woocommerce',
 			'wc-uploady',
 			array( $this, 'render_page' ),
@@ -101,20 +101,20 @@ class WC_Uploady_Admin
             'categories'   => $categories,
             'isProActive'  => defined('WC_UPLOADY_PRO_VERSION'),
             'i18n'         => array(
-                'dropzone'        => __('Drag & drop product images here, or click to browse', 'wooupload'),
-                'uploading'       => __('Uploading…', 'wooupload'),
-                'saving'          => __('Saving…', 'wooupload'),
-                'saved'           => __('Saved', 'wooupload'),
-                'publishing'      => __('Publishing…', 'wooupload'),
-                'published'       => __('Published!', 'wooupload'),
-                'publishAll'      => __('Publish All', 'wooupload'),
-                'deleteConfirm'   => __('Delete this product?', 'wooupload'),
-                'noProducts'      => __('No draft products yet. Upload images to get started.', 'wooupload'),
-                'titleRequired'   => __('Title is required', 'wooupload'),
-                'priceRequired'   => __('Price is required', 'wooupload'),
-                'validationError' => __('Fix highlighted errors before publishing.', 'wooupload'),
-                'uploadError'     => __('Upload failed. Please try again.', 'wooupload'),
-                'networkError'    => __('Network error. Please try again.', 'wooupload'),
+                'dropzone'        => __('Drag & drop product images here, or click to browse', 'uploady'),
+                'uploading'       => __('Uploading…', 'uploady'),
+                'saving'          => __('Saving…', 'uploady'),
+                'saved'           => __('Saved', 'uploady'),
+                'publishing'      => __('Publishing…', 'uploady'),
+                'published'       => __('Published!', 'uploady'),
+                'publishAll'      => __('Publish All', 'uploady'),
+                'deleteConfirm'   => __('Delete this product?', 'uploady'),
+                'noProducts'      => __('No draft products yet. Upload images to get started.', 'uploady'),
+                'titleRequired'   => __('Title is required', 'uploady'),
+                'priceRequired'   => __('Price is required', 'uploady'),
+                'validationError' => __('Fix highlighted errors before publishing.', 'uploady'),
+                'uploadError'     => __('Upload failed. Please try again.', 'uploady'),
+                'networkError'    => __('Network error. Please try again.', 'uploady'),
             ),
         );
 
@@ -137,7 +137,7 @@ class WC_Uploady_Admin
     public function render_page()
     {
         if (! current_user_can('manage_woocommerce')) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'wooupload'));
+            wp_die(esc_html__('You do not have permission to access this page.', 'uploady'));
         }
 
         include WC_UPLOADY_PLUGIN_DIR . 'admin/views/uploady-page.php';

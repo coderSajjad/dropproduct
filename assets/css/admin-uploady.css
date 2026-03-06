@@ -14,10 +14,10 @@
 /* ─── Design Tokens ─────────────────────────────────── */
 :root {
 	--wu-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-	--wu-primary: #14213d;
-	--wu-primary-hover: #0d1627;
-	--wu-primary-light: #e8ecf4;
-	--wu-primary-ring: rgba(20, 33, 61, 0.25);
+	--wu-primary: #4F46E5;
+	--wu-primary-hover: #4338CA;
+	--wu-primary-light: #EEF2FF;
+	--wu-primary-ring: rgba(79, 70, 229, 0.25);
 	--wu-success: #059669;
 	--wu-success-light: #ecfdf5;
 	--wu-danger: #dc2626;
@@ -61,9 +61,9 @@
 	gap: 12px;
 	margin-bottom: 24px;
 	padding: 20px 28px;
-	background: linear-gradient(135deg, #0a0f1e 0%, #14213d 50%, #1b3a5c 100%);
+	background: linear-gradient(135deg, #3730A3 0%, #4F46E5 50%, #6366F1 100%);
 	border-radius: var(--wu-radius-lg);
-	box-shadow: 0 4px 20px rgba(20, 33, 61, 0.35);
+	box-shadow: 0 4px 20px rgba(79, 70, 229, 0.35);
 	color: #fff;
 	position: relative;
 	overflow: hidden;
@@ -155,7 +155,7 @@
 #wc-uploady-publish-all:hover:not(:disabled) {
 	transform: translateY(-1px);
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-	background: linear-gradient(135deg, #fff 0%, #b8c7e0 100%);
+	background: linear-gradient(135deg, #fff 0%, #C7D2FE 100%);
 }
 
 #wc-uploady-publish-all:disabled {
@@ -203,8 +203,8 @@
 
 .wc-uploady-notice--info {
 	background: var(--wu-primary-light);
-	border-color: rgba(20, 33, 61, 0.15);
-	color: #14213d;
+	border-color: rgba(79, 70, 229, 0.15);
+	color: #4F46E5;
 }
 
 /* ─── Dropzone ───────────────────────────────────────── */
@@ -321,7 +321,7 @@
 .wc-uploady-progress-bar__fill {
 	height: 100%;
 	width: 0%;
-	background: linear-gradient(90deg, var(--wu-primary), #1b3a5c);
+	background: linear-gradient(90deg, var(--wu-primary), #6366F1);
 	border-radius: 4px;
 	transition: width 0.3s ease;
 }
@@ -581,7 +581,7 @@ select.wc-uploady-editable {
 	display: inline-block;
 	font-size: 10px;
 	font-weight: 600;
-	background: linear-gradient(135deg, var(--wu-primary), #1b3a5c);
+	background: linear-gradient(135deg, var(--wu-primary), #6366F1);
 	color: #fff;
 	padding: 1px 7px;
 	border-radius: 10px;
@@ -721,7 +721,7 @@ select.wc-uploady-editable {
 	width: 36px;
 	height: 36px;
 	background: var(--wu-primary-light);
-	border: 1.5px solid rgba(20, 33, 61, 0.2);
+	border: 1.5px solid rgba(79, 70, 229, 0.2);
 	border-radius: var(--wu-radius-sm);
 	cursor: pointer;
 	transition: all var(--wu-transition);

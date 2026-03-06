@@ -63,7 +63,7 @@ class WC_Uploady_Product_Service
         $product_id = $product->save();
 
         if (! $product_id) {
-            return new WP_Error('create_failed', __('Failed to create product.', 'wooupload'));
+            return new WP_Error('create_failed', __('Failed to create product.', 'uploady'));
         }
 
         /**
@@ -90,7 +90,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'wooupload'));
+            return new WP_Error('invalid_product', __('Product not found.', 'uploady'));
         }
 
         switch ($field) {
@@ -163,7 +163,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'wooupload'));
+            return new WP_Error('invalid_product', __('Product not found.', 'uploady'));
         }
 
         $errors = $this->validate_for_publish($product);
@@ -198,7 +198,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'wooupload'));
+            return new WP_Error('invalid_product', __('Product not found.', 'uploady'));
         }
 
         $product->delete($force);
@@ -296,11 +296,11 @@ class WC_Uploady_Product_Service
         $errors = array();
 
         if (empty(trim($product->get_name()))) {
-            $errors[] = __('Title is required.', 'wooupload');
+            $errors[] = __('Title is required.', 'uploady');
         }
 
         if ('' === $product->get_regular_price()) {
-            $errors[] = __('Price is required.', 'wooupload');
+            $errors[] = __('Price is required.', 'uploady');
         }
 
         /**
