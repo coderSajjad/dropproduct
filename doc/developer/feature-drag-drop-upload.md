@@ -8,13 +8,13 @@ Replace the tedious WooCommerce product creation process (one product at a time)
 
 ## Mechanism
 
-### Frontend (`admin-uploady.js`)
+### Frontend (`admin-dropproduct.js`)
 
 The dropzone element listens for `dragenter`, `dragover`, `dragleave`, `drop`, and `click` events. On file drop or selection:
 
 1. Files are filtered for allowed MIME types (JPEG, PNG, GIF, WebP)
 2. A `FormData` object is built with all valid image files
-3. Files are sent via `$.ajax()` POST to `wc_uploady_upload_images`
+3. Files are sent via `$.ajax()` POST to `dropproduct_upload_images`
 4. Upload progress is shown via an animated progress bar on the dropzone
 5. On success, returned product data is rendered as grid rows
 6. On error, a toast notification is shown
@@ -22,8 +22,8 @@ The dropzone element listens for `dragenter`, `dragover`, `dragleave`, `drop`, a
 ```javascript
 uploadFiles: function (files) {
     var formData = new FormData();
-    formData.append('action', 'wc_uploady_upload_images');
-    formData.append('nonce', wcUploady.nonce);
+    formData.append('action', 'dropproduct_upload_images');
+    formData.append('nonce', dropProduct.nonce);
 
     for (var i = 0; i < files.length; i++) {
         if (files[i].type.indexOf('image/') === 0) {
@@ -32,7 +32,7 @@ uploadFiles: function (files) {
     }
 
     $.ajax({
-        url: wcUploady.ajaxUrl,
+        url: dropProduct.ajaxUrl,
         type: 'POST',
         data: formData,
         processData: false,
@@ -61,18 +61,18 @@ During upload the dropzone switches states:
 3. Percentage text updates in real-time via XHR `progress` event
 4. After completion (success or error), dropzone resets to default state via `resetDropzone()`
 
-### Backend — Batch Upload (`WC_Uploady_Ajax::handle_upload_images()`)
+### Backend — Batch Upload (`DropProduct_Ajax::handle_upload_images()`)
 
 1. Calls `verify_request()` — validates nonce + capability
 2. Normalizes the `$_FILES` array via `normalize_files_array()` (PHP sends multi-file arrays in a messy format)
 3. Validates each file against `allowed_mime_types()`:
    - `image/jpeg`, `image/png`, `image/gif`, `image/webp`
 4. Uses `media_handle_sideload()` to save each file to the WordPress Media Library
-5. Passes all attachment IDs to `WC_Uploady_Grouping_Engine::group()`
-6. Creates draft products via `WC_Uploady_Product_Service::create_draft_product()`
+5. Passes all attachment IDs to `DropProduct_Grouping_Engine::group()`
+6. Creates draft products via `DropProduct_Product_Service::create_draft_product()`
 7. Returns formatted product data array for the grid
 
-### Backend — Single Image Upload (`WC_Uploady_Ajax::handle_upload_single_image()`)
+### Backend — Single Image Upload (`DropProduct_Ajax::handle_upload_single_image()`)
 
 An alternative upload endpoint for single-file-at-a-time uploads:
 
@@ -83,10 +83,10 @@ An alternative upload endpoint for single-file-at-a-time uploads:
 
 After all single uploads complete, the client calls `handle_create_products()` with collected attachment IDs to trigger grouping and product creation.
 
-### Backend — Create Products (`WC_Uploady_Ajax::handle_create_products()`)
+### Backend — Create Products (`DropProduct_Ajax::handle_create_products()`)
 
 1. Receives an array of `attachment_ids` via POST
-2. Groups them via `WC_Uploady_Grouping_Engine::group()`
+2. Groups them via `DropProduct_Grouping_Engine::group()`
 3. Creates draft products for each group
 4. Returns formatted product data
 
@@ -112,10 +112,10 @@ PHP sends multi-file uploads in a confusing structure:
 
 | File | Role |
 |------|------|
-| `admin-uploady.js` → `uploadFiles()` | Client-side upload handler with XHR progress |
-| `admin-uploady.js` → `resetDropzone()` | Reset dropzone to default state after upload |
-| `class-wc-uploady-ajax.php` → `handle_upload_images()` | Batch upload processor |
-| `class-wc-uploady-ajax.php` → `handle_upload_single_image()` | Single image upload processor |
-| `class-wc-uploady-ajax.php` → `handle_create_products()` | Product creation from attachment IDs |
-| `uploady-page.php` | Dropzone HTML template + progress bar |
-| `admin-uploady.css` | Dropzone styling (drag states, progress bar, animations) |
+| `admin-dropproduct.js` → `uploadFiles()` | Client-side upload handler with XHR progress |
+| `admin-dropproduct.js` → `resetDropzone()` | Reset dropzone to default state after upload |
+| `class-dropproduct-ajax.php` → `handle_upload_images()` | Batch upload processor |
+| `class-dropproduct-ajax.php` → `handle_upload_single_image()` | Single image upload processor |
+| `class-dropproduct-ajax.php` → `handle_create_products()` | Product creation from attachment IDs |
+| `dropproduct-page.php` | Dropzone HTML template + progress bar |
+| `admin-dropproduct.css` | Dropzone styling (drag states, progress bar, animations) |

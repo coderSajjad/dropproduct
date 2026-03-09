@@ -68,4 +68,4 @@ bracelet.jpg      → 1 product: "Bracelet" (1 image)
 - Additional images become **gallery images** (shown in the product image carousel)
 - The gallery count is shown as a badge on the thumbnail (e.g., "+3")
 - Name your images carefully — the naming determines how they're grouped
-- Use **Uploady Pro** for advanced grouping with ignore words and prefix/suffix stripping
+- Use **DropProduct Pro** for advanced grouping with ignore words and prefix/suffix stripping

@@ -6,7 +6,7 @@
  * Handles all admin AJAX endpoints for image upload, product update,
  * publish, and delete operations.
  *
- * @package WooCommerce_Uploady
+ * @package DropProduct
  * @since   1.0.0
  */
 
@@ -15,32 +15,32 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Class WC_Uploady_Ajax
+ * Class DropProduct_Ajax
  *
  * @since 1.0.0
  */
-class WC_Uploady_Ajax
+class DropProduct_Ajax
 {
 
     /**
      * Product service instance.
      *
-     * @var WC_Uploady_Product_Service
+     * @var DropProduct_Product_Service
      */
     private $product_service;
 
     /**
      * Grouping engine instance.
      *
-     * @var WC_Uploady_Grouping_Engine
+     * @var DropProduct_Grouping_Engine
      */
     private $grouping_engine;
 
     /**
      * Constructor.
      *
-     * @param WC_Uploady_Product_Service $product_service Product service.
-     * @param WC_Uploady_Grouping_Engine $grouping_engine Grouping engine.
+     * @param DropProduct_Product_Service $product_service Product service.
+     * @param DropProduct_Grouping_Engine $grouping_engine Grouping engine.
      */
     public function __construct($product_service, $grouping_engine)
     {
@@ -60,7 +60,7 @@ class WC_Uploady_Ajax
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() above.
         if (empty($_FILES['images'])) {
-            wp_send_json_error(array('message' => __('No images uploaded.', 'uploady')));
+            wp_send_json_error(array('message' => __('No images uploaded.', 'dropproduct')));
         }
 
         require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -97,7 +97,7 @@ class WC_Uploady_Ajax
         }
 
         if (empty($attachment_ids)) {
-            wp_send_json_error(array('message' => __('No valid images were uploaded.', 'uploady')));
+            wp_send_json_error(array('message' => __('No valid images were uploaded.', 'dropproduct')));
         }
 
         // Group images and create products.
@@ -141,7 +141,7 @@ class WC_Uploady_Ajax
         }
 
         if (! $product_id || ! $field) {
-            wp_send_json_error(array('message' => __('Invalid request.', 'uploady')));
+            wp_send_json_error(array('message' => __('Invalid request.', 'dropproduct')));
         }
 
         $result = $this->product_service->update_product_field($product_id, $field, $value);
@@ -150,7 +150,7 @@ class WC_Uploady_Ajax
             wp_send_json_error(array('message' => $result->get_error_message()));
         }
 
-        wp_send_json_success(array('message' => __('Saved.', 'uploady')));
+        wp_send_json_success(array('message' => __('Saved.', 'dropproduct')));
     }
 
     /**
@@ -164,7 +164,7 @@ class WC_Uploady_Ajax
         $product_ids = isset($_POST['product_ids']) ? array_map('absint', (array) $_POST['product_ids']) : array();
 
         if (empty($product_ids)) {
-            wp_send_json_error(array('message' => __('No products to publish.', 'uploady')));
+            wp_send_json_error(array('message' => __('No products to publish.', 'dropproduct')));
         }
 
         $published = array();
@@ -200,7 +200,7 @@ class WC_Uploady_Ajax
         $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
 
         if (! $product_id) {
-            wp_send_json_error(array('message' => __('Invalid product ID.', 'uploady')));
+            wp_send_json_error(array('message' => __('Invalid product ID.', 'dropproduct')));
         }
 
         $result = $this->product_service->delete_product($product_id);
@@ -209,7 +209,7 @@ class WC_Uploady_Ajax
             wp_send_json_error(array('message' => $result->get_error_message()));
         }
 
-        wp_send_json_success(array('message' => __('Product deleted.', 'uploady')));
+        wp_send_json_success(array('message' => __('Product deleted.', 'dropproduct')));
     }
 
     /**
@@ -236,7 +236,7 @@ class WC_Uploady_Ajax
 
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() above.
         if (empty($_FILES['image'])) {
-            wp_send_json_error(array('message' => __('No image provided.', 'uploady')));
+            wp_send_json_error(array('message' => __('No image provided.', 'dropproduct')));
         }
 
         require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -249,7 +249,7 @@ class WC_Uploady_Ajax
         // Validate file type.
         $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name']);
         if (! $check['type'] || ! in_array($check['type'], $this->allowed_mime_types(), true)) {
-            wp_send_json_error(array('message' => __('Invalid file type.', 'uploady')));
+            wp_send_json_error(array('message' => __('Invalid file type.', 'dropproduct')));
         }
 
         $file_array = array(
@@ -283,7 +283,7 @@ class WC_Uploady_Ajax
         $attachment_ids = isset($_POST['attachment_ids']) ? array_map('absint', (array) $_POST['attachment_ids']) : array();
 
         if (empty($attachment_ids)) {
-            wp_send_json_error(array('message' => __('No images provided.', 'uploady')));
+            wp_send_json_error(array('message' => __('No images provided.', 'dropproduct')));
         }
 
         $groups   = $this->grouping_engine->group($attachment_ids);
@@ -309,12 +309,12 @@ class WC_Uploady_Ajax
      */
     private function verify_request()
     {
-        if (! check_ajax_referer('wc_uploady_nonce', 'nonce', false)) {
-            wp_send_json_error(array('message' => __('Security check failed.', 'uploady')), 403);
+        if (! check_ajax_referer('dropproduct_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed.', 'dropproduct')), 403);
         }
 
         if (! current_user_can('manage_woocommerce')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'uploady')), 403);
+            wp_send_json_error(array('message' => __('Permission denied.', 'dropproduct')), 403);
         }
     }
 

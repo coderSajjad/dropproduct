@@ -6,9 +6,9 @@ Automatically convert filenames like `blue-cotton-hoodie-01.jpg` into clean prod
 
 ---
 
-## Key Class: `WC_Uploady_Grouping_Engine`
+## Key Class: `DropProduct_Grouping_Engine`
 
-**File:** `includes/class-wc-uploady-grouping-engine.php`
+**File:** `includes/class-dropproduct-grouping-engine.php`
 
 ### Public API
 
@@ -75,7 +75,7 @@ Filename:     "blue-cotton-hoodie-01.jpg"
 
 ## Gallery Grouping Mechanism
 
-**Location:** `WC_Uploady_Grouping_Engine::group()`
+**Location:** `DropProduct_Grouping_Engine::group()`
 
 ### How It Works
 
@@ -83,7 +83,7 @@ Filename:     "blue-cotton-hoodie-01.jpg"
 2. Extract the filename without extension using `pathinfo()`
 3. Strip trailing numeric suffixes to get the base name
 4. Bucket all attachment IDs by their base name
-5. Apply the `wc_uploady_group_images` filter (extension point)
+5. Apply the `dropproduct_group_images` filter (extension point)
 6. For each bucket:
    - First attachment → `featured` image
    - Remaining attachments → `gallery` images
@@ -106,7 +106,7 @@ Products:
 ### Extension Point
 
 ```php
-$buckets = apply_filters('wc_uploady_group_images', $buckets, $attachment_ids);
+$buckets = apply_filters('dropproduct_group_images', $buckets, $attachment_ids);
 ```
 
 Pro hooks into this filter to add advanced grouping (ignore words, prefix/suffix stripping, AI-based grouping).
@@ -117,6 +117,6 @@ Pro hooks into this filter to add advanced grouping (ignore words, prefix/suffix
 
 | File | Role |
 |------|------|
-| `class-wc-uploady-grouping-engine.php` → `group()` | Main grouping logic |
-| `class-wc-uploady-grouping-engine.php` → `extract_base_name()` | Numeric suffix stripping |
-| `class-wc-uploady-grouping-engine.php` → `humanize_title()` | Filename → title conversion |
+| `class-dropproduct-grouping-engine.php` → `group()` | Main grouping logic |
+| `class-dropproduct-grouping-engine.php` → `extract_base_name()` | Numeric suffix stripping |
+| `class-dropproduct-grouping-engine.php` → `humanize_title()` | Filename → title conversion |

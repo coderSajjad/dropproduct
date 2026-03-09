@@ -1,5 +1,5 @@
-=== Uploady – Bulk Product Uploader for WooCommerce ===
-Contributors: uploady
+=== DropProduct – Bulk Product Uploader for WooCommerce ===
+Contributors: codersajjad
 Tags: woocommerce, bulk product upload, product creator, drag drop upload, woocommerce bulk edit
 Requires at least: 5.8
 Tested up to: 6.9
@@ -12,13 +12,11 @@ Bulk create WooCommerce products from images. Drag & drop, auto-generate titles,
 
 == Description ==
 
-https://www.youtube.com/watch?v=PLACEHOLDER
-
-**Uploady** is the fastest way to add products to your WooCommerce store. Stop wasting hours creating products one by one — just drag & drop your product images and let Uploady do the rest.
+**DropProduct** is the fastest way to add products to your WooCommerce store. Stop wasting hours creating products one by one — just drag & drop your product images and let DropProduct do the rest.
 
 Upload 10, 50, or 100+ product images at once. Each image instantly becomes a draft product with a clean title generated from the filename. Edit prices, categories, SKUs, and descriptions right in the grid — everything saves automatically. When you're ready, publish all products in a single click.
 
-Whether you're launching a new store, restocking your catalog, or migrating from another platform, Uploady turns hours of tedious work into minutes.
+Whether you're launching a new store, restocking your catalog, or migrating from another platform, DropProduct turns hours of tedious work into minutes.
 
 = ⚡ How It Works =
 
@@ -49,11 +47,11 @@ Whether you're launching a new store, restocking your catalog, or migrating from
 * **Batch Publish with Validation** — Publish all drafts in one click; missing title or price fields are highlighted in red
 * **Draft Counter** — See how many unpublished products you have at a glance
 * **HPOS Compatible** — Fully compatible with WooCommerce High-Performance Order Storage
-* **Zero Bloat** — Assets only load on the Uploady page; no impact on the rest of your admin
+* **Zero Bloat** — Assets only load on the DropProduct page; no impact on the rest of your admin
 
 = ⭐ Pro Features =
 
-Unlock the full power of Uploady with [Uploady Pro](https://Uploady.dev/pro):
+Unlock the full power of DropProduct with [DropProduct Pro](https://dropproduct.dev/pro):
 
 * **Bulk Editing** — Select multiple products and set price, category, stock, tax class, or shipping class for all of them at once
 * **Product Duplication** — Clone any product row with one click
@@ -83,35 +81,35 @@ Use hyphens (`-`) or underscores (`_`) to separate words. Trailing numbers are s
 * Every request is **nonce-protected** and capability-checked (`manage_woocommerce`)
 * All inputs are **sanitized and escaped** — no raw database queries
 * Built on the **WooCommerce CRUD API** for maximum compatibility
-* Products created by Uploady are **tagged with meta** so they never interfere with your existing products
+* Products created by DropProduct are **tagged with meta** so they never interfere with your existing products
 
 = 🚀 Built for Speed =
 
 * **SPA-style interface** — No page reloads, everything runs via AJAX
-* **Assets load only on the Uploady page** — Zero global admin impact
+* **Assets load only on the DropProduct page** — Zero global admin impact
 * **Lightweight codebase** — Clean, well-structured PHP and JavaScript
 * **No external dependencies** — No bloated frameworks or libraries
 
 == Installation ==
 
-1. Upload the `Uploady` folder to `/wp-content/plugins/`
+1. Upload the `DropProduct` folder to `/wp-content/plugins/`
 2. Activate the plugin through the **Plugins** menu in WordPress
 3. Make sure **WooCommerce** is installed and active
-4. Navigate to **Uploady** in the admin sidebar to start creating products
+4. Navigate to **DropProduct** in the admin sidebar to start creating products
 
 == Frequently Asked Questions ==
 
-= Does Uploady require WooCommerce? =
+= Does DropProduct require WooCommerce? =
 
-Yes. WooCommerce must be installed and active. Uploady requires WooCommerce 6.0 or higher.
+Yes. WooCommerce must be installed and active. DropProduct requires WooCommerce 6.0 or higher.
 
 = What image formats are supported? =
 
-Uploady supports JPEG (.jpg, .jpeg), PNG (.png), GIF (.gif), and WebP (.webp) image formats.
+DropProduct supports JPEG (.jpg, .jpeg), PNG (.png), GIF (.gif), and WebP (.webp) image formats.
 
 = What product types does the free version support? =
 
-The free version creates WooCommerce **Simple Products**. Variable product support with automatic attribute detection is available in [Uploady Pro](https://Uploady.dev/pro).
+The free version creates WooCommerce **Simple Products**. Variable product support with automatic attribute detection is available in [DropProduct Pro](https://dropproduct.dev/pro).
 
 = How does the smart image grouping work? =
 
@@ -119,19 +117,19 @@ If you upload files with the same base name but different trailing numbers — l
 
 = Will this plugin slow down my admin? =
 
-No. Uploady loads its CSS and JavaScript **only on the Uploady admin page**. It adds zero overhead to the rest of your WordPress admin.
+No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin page**. It adds zero overhead to the rest of your WordPress admin.
 
 = Is it safe to use on a live store? =
 
-Absolutely. All products are created as **drafts** first. Nothing is published until you click "Publish All" and validation passes. Products created by Uploady are tagged separately and never interfere with your existing products.
+Absolutely. All products are created as **drafts** first. Nothing is published until you click "Publish All" and validation passes. Products created by DropProduct are tagged separately and never interfere with your existing products.
 
 = Can I upload hundreds of images at once? =
 
-Yes, but your server's `upload_max_filesize`, `post_max_size`, and `max_file_uploads` PHP settings determine the upper limit. For best reliability, upload in batches of 10–20 images. [Uploady Pro](https://Uploady.dev/pro) adds configurable batch size and auto-retry for large uploads.
+Yes, but your server's `upload_max_filesize`, `post_max_size`, and `max_file_uploads` PHP settings determine the upper limit. For best reliability, upload in batches of 10–20 images. [DropProduct Pro](https://dropproduct.dev/pro) adds configurable batch size and auto-retry for large uploads.
 
-= Does Uploady work with WooCommerce HPOS? =
+= Does DropProduct work with WooCommerce HPOS? =
 
-Yes. Uploady is fully compatible with WooCommerce High-Performance Order Storage (HPOS).
+Yes. DropProduct is fully compatible with WooCommerce High-Performance Order Storage (HPOS).
 
 = What fields can I edit in the grid? =
 
@@ -139,20 +137,8 @@ You can edit: **Title**, **Short Description**, **Regular Price**, **Sale Price*
 
 = Can I undo changes? =
 
-Changes are saved to the database immediately as you edit. There is no undo button. However, since products start as drafts, you can delete any product before publishing. [Uploady Pro](https://Uploady.dev/pro) adds session rollback to delete entire upload batches at once.
+Changes are saved to the database immediately as you edit. There is no undo button. However, since products start as drafts, you can delete any product before publishing. [DropProduct Pro](https://dropproduct.dev/pro) adds session rollback to delete entire upload batches at once.
 
-= Where can I get support? =
-
-For the free version, please use the [WordPress.org support forum](https://wordpress.org/support/plugin/Uploady/). For Pro customers, visit [Uploady.dev/support](https://Uploady.dev/support).
-
-== Screenshots ==
-
-1. **Drag & Drop Upload** — Drop product images to create products instantly
-2. **Editable Product Grid** — Edit title, price, SKU, stock, and category inline with auto-save
-3. **Smart Gallery Grouping** — Related images are automatically grouped into one product
-4. **Hover Image Preview** — See full-size images by hovering over thumbnails
-5. **Publish Validation** — Missing required fields are highlighted before publishing
-6. **Description Editor** — Add product descriptions via a clean popup modal
 
 == Changelog ==
 
@@ -172,4 +158,4 @@ For the free version, please use the [WordPress.org support forum](https://wordp
 == Upgrade Notice ==
 
 = 1.0.0 =
-Initial release of Uploady – the fastest way to bulk create WooCommerce products from images. Drag, drop, edit, publish.
+Initial release of DropProduct – the fastest way to bulk create WooCommerce products from images. Drag, drop, edit, publish.

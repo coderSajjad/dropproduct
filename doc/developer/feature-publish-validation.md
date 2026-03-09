@@ -10,7 +10,7 @@ Publish all draft products at once with built-in validation to catch missing req
 
 ### Mechanism
 
-**Frontend:** `admin-uploady.js` → `publishAll()`
+**Frontend:** `admin-dropproduct.js` → `publishAll()`
 
 1. Selects all draft rows (excludes already-published via `.is-published`)
 2. Clears previous validation classes (`has-error`, `is-error`)
@@ -18,7 +18,7 @@ Publish all draft products at once with built-in validation to catch missing req
 4. Rows with errors get `has-error` class, invalid fields get `is-error`
 5. Valid product IDs are collected
 6. If all rows have errors, shows validation error message and stops
-7. Otherwise: disables Publish button, sends AJAX POST to `wc_uploady_publish_all`
+7. Otherwise: disables Publish button, sends AJAX POST to `dropproduct_publish_all`
 8. On response:
    - Published rows: adds `is-published` class, status badge changes from "draft" to "publish"
    - Failed rows: adds `has-error` class
@@ -53,7 +53,7 @@ $rows.each(function () {
 });
 ```
 
-**Backend:** `WC_Uploady_Ajax::handle_publish_all()`
+**Backend:** `DropProduct_Ajax::handle_publish_all()`
 
 1. Receives `product_ids[]` array
 2. Iterates through each product ID
@@ -67,7 +67,7 @@ $rows.each(function () {
 
 ### Built-in Checks
 
-`WC_Uploady_Product_Service::validate_for_publish()`:
+`DropProduct_Product_Service::validate_for_publish()`:
 
 | Check | Condition | Error |
 |-------|-----------|-------|
@@ -77,7 +77,7 @@ $rows.each(function () {
 ### Extension Point
 
 ```php
-$errors = apply_filters('wc_uploady_validate_product', $errors, $product);
+$errors = apply_filters('dropproduct_validate_product', $errors, $product);
 ```
 
 Pro adds: category check, duplicate SKU, broken image, variation conflicts.
@@ -96,7 +96,7 @@ public function publish_product($product_id) {
     $product->set_status('publish');
     $product->save();
 
-    do_action('wc_uploady_after_publish_product', $product_id);
+    do_action('dropproduct_after_publish_product', $product_id);
 
     return true;
 }
@@ -109,11 +109,11 @@ public function publish_product($product_id) {
 Fields with `is-error` class get a red border. The row itself gets `has-error` for a light red background:
 
 ```css
-.wc-uploady-grid tbody tr.has-error {
+.dropproduct-grid tbody tr.has-error {
     background: var(--wu-danger-light);  /* #fef2f2 */
 }
 
-.wc-uploady-grid tbody tr.has-error .wc-uploady-editable.is-error {
+.dropproduct-grid tbody tr.has-error .dropproduct-editable.is-error {
     border-color: var(--wu-danger);      /* #dc2626 */
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
 }
@@ -124,7 +124,7 @@ Fields with `is-error` class get a red border. The row itself gets `has-error` f
 ## Draft Count & Button State
 
 `updateDraftCount()` counts non-published rows and:
-- Updates the `#wc-uploady-draft-count` text
+- Updates the `#dropproduct-draft-count` text
 - Disables the Publish All button when count is 0
 
 ---
@@ -133,9 +133,9 @@ Fields with `is-error` class get a red border. The row itself gets `has-error` f
 
 | File | Role |
 |------|------|
-| `admin-uploady.js` → `publishAll()` | Client-side validation + batch publish request |
-| `admin-uploady.js` → `updateDraftCount()` | Draft counter and button state management |
-| `class-wc-uploady-ajax.php` → `handle_publish_all()` | Server-side batch publish handler |
-| `class-wc-uploady-product-service.php` → `publish_product()` | Single product publish + validation |
-| `class-wc-uploady-product-service.php` → `validate_for_publish()` | Validation rules |
-| `admin-uploady.css` | Error highlighting, status badge styles |
+| `admin-dropproduct.js` → `publishAll()` | Client-side validation + batch publish request |
+| `admin-dropproduct.js` → `updateDraftCount()` | Draft counter and button state management |
+| `class-dropproduct-ajax.php` → `handle_publish_all()` | Server-side batch publish handler |
+| `class-dropproduct-product-service.php` → `publish_product()` | Single product publish + validation |
+| `class-dropproduct-product-service.php` → `validate_for_publish()` | Validation rules |
+| `admin-dropproduct.css` | Error highlighting, status badge styles |

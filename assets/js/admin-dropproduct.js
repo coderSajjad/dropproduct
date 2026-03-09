@@ -1,20 +1,20 @@
 /**
- * WooCommerce Uploady – Bulk Product Creator — Admin JavaScript
+ * WooCommerce DropProduct – Bulk Product Creator — Admin JavaScript
  *
  * SPA-style grid with drag & drop upload, inline editing,
  * auto-save, image preview, and bulk publish.
  *
- * @package WooCommerce_Uploady
+ * @package DropProduct
  * @since   1.0.0
  */
 
-/* global jQuery, wcUploady */
+/* global jQuery, dropProduct */
 (function ($) {
 	'use strict';
 
-	var Uploady = {
+	var DropProduct = {
 		/**
-		 * Initialize the Uploady SPA.
+		 * Initialize the DropProduct SPA.
 		 */
 		init: function () {
 			this.cache();
@@ -27,33 +27,33 @@
 		 * Cache DOM elements.
 		 */
 		cache: function () {
-			this.$wrap = $('.wc-uploady-wrap');
-			this.$dropzone = $('#wc-uploady-dropzone');
-			this.$fileInput = $('#wc-uploady-file-input');
-			this.$browseBtn = $('#wc-uploady-browse-btn');
-			this.$gridBody = $('#wc-uploady-grid-body');
-			this.$emptyRow = $('#wc-uploady-empty-row');
-			this.$publishBtn = $('#wc-uploady-publish-all');
-			this.$draftCount = $('#wc-uploady-draft-count');
-			this.$notices = $('#wc-uploady-notices');
-			this.$preview = $('#wc-uploady-image-preview');
-			this.$previewImg = $('#wc-uploady-preview-img');
-			this.$progressWrap = $('#wc-uploady-upload-progress');
-			this.$progressFill = $('#wc-uploady-progress-fill');
-			this.$progressText = $('#wc-uploady-progress-text');
-			this.$dropInner = this.$dropzone.find('.wc-uploady-dropzone__inner');
+			this.$wrap = $('.dropproduct-wrap');
+			this.$dropzone = $('#dropproduct-dropzone');
+			this.$fileInput = $('#dropproduct-file-input');
+			this.$browseBtn = $('#dropproduct-browse-btn');
+			this.$gridBody = $('#dropproduct-grid-body');
+			this.$emptyRow = $('#dropproduct-empty-row');
+			this.$publishBtn = $('#dropproduct-publish-all');
+			this.$draftCount = $('#dropproduct-draft-count');
+			this.$notices = $('#dropproduct-notices');
+			this.$preview = $('#dropproduct-image-preview');
+			this.$previewImg = $('#dropproduct-preview-img');
+			this.$progressWrap = $('#dropproduct-upload-progress');
+			this.$progressFill = $('#dropproduct-progress-fill');
+			this.$progressText = $('#dropproduct-progress-text');
+			this.$dropInner = this.$dropzone.find('.dropproduct-dropzone__inner');
 		},
 
 		/**
 		 * Cache description modal elements.
 		 */
 		cacheModal: function () {
-			this.$descModal = $('#wc-uploady-desc-modal');
-			this.$descOverlay = $('#wc-uploady-desc-overlay');
-			this.$descTextarea = $('#wc-uploady-desc-textarea');
-			this.$descSaveBtn = $('#wc-uploady-desc-save');
-			this.$descCancelBtn = $('#wc-uploady-desc-cancel');
-			this.$descCloseBtn = $('#wc-uploady-desc-close');
+			this.$descModal = $('#dropproduct-desc-modal');
+			this.$descOverlay = $('#dropproduct-desc-overlay');
+			this.$descTextarea = $('#dropproduct-desc-textarea');
+			this.$descSaveBtn = $('#dropproduct-desc-save');
+			this.$descCancelBtn = $('#dropproduct-desc-cancel');
+			this.$descCloseBtn = $('#dropproduct-desc-close');
 			this._descProductId = 0;
 		},
 
@@ -95,7 +95,7 @@
 			});
 
 			// Inline editing — auto-save on blur.
-			this.$gridBody.on('blur', '.wc-uploady-editable', function () {
+			this.$gridBody.on('blur', '.dropproduct-editable', function () {
 				self.saveField($(this));
 
 				// Validate prices when a price field changes.
@@ -106,14 +106,14 @@
 			});
 
 			// Also save select fields on change.
-			this.$gridBody.on('change', 'select.wc-uploady-editable', function () {
+			this.$gridBody.on('change', 'select.dropproduct-editable', function () {
 				self.saveField($(this));
 			});
 
 			// Delete product.
-			this.$gridBody.on('click', '.wc-uploady-delete-btn', function () {
+			this.$gridBody.on('click', '.dropproduct-delete-btn', function () {
 				var $row = $(this).closest('tr');
-				if (confirm(wcUploady.i18n.deleteConfirm)) {
+				if (confirm(dropProduct.i18n.deleteConfirm)) {
 					self.deleteProduct($row);
 				}
 			});
@@ -125,7 +125,7 @@
 
 			// Image preview on hover.
 			this.$gridBody
-				.on('mouseenter', '.wc-uploady-thumb', function (e) {
+				.on('mouseenter', '.dropproduct-thumb', function (e) {
 					var fullUrl = $(this).data('full');
 					if (fullUrl) {
 						self.$previewImg.attr('src', fullUrl);
@@ -133,16 +133,16 @@
 						self.positionPreview(e);
 					}
 				})
-				.on('mousemove', '.wc-uploady-thumb', function (e) {
+				.on('mousemove', '.dropproduct-thumb', function (e) {
 					self.positionPreview(e);
 				})
-				.on('mouseleave', '.wc-uploady-thumb', function () {
+				.on('mouseleave', '.dropproduct-thumb', function () {
 					self.$preview.hide();
 					self.$previewImg.attr('src', '');
 				});
 
 			// Description modal.
-			this.$gridBody.on('click', '.wc-uploady-desc-btn', function () {
+			this.$gridBody.on('click', '.dropproduct-desc-btn', function () {
 				var $row = $(this).closest('tr');
 				self.openDescriptionModal($row);
 			});
@@ -170,9 +170,9 @@
 		loadExistingProducts: function () {
 			var self = this;
 
-			$.post(wcUploady.ajaxUrl, {
-				action: 'wc_uploady_load_products',
-				nonce: wcUploady.nonce
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_load_products',
+				nonce: dropProduct.nonce
 			}, function (response) {
 				if (response.success && response.data.products.length) {
 					self.renderProducts(response.data.products);
@@ -189,8 +189,8 @@
 			var self = this;
 			var formData = new FormData();
 
-			formData.append('action', 'wc_uploady_upload_images');
-			formData.append('nonce', wcUploady.nonce);
+			formData.append('action', 'dropproduct_upload_images');
+			formData.append('nonce', dropProduct.nonce);
 
 			var imageCount = 0;
 			for (var i = 0; i < files.length; i++) {
@@ -201,7 +201,7 @@
 			}
 
 			if (!imageCount) {
-				this.showNotice(wcUploady.i18n.uploadError, 'error');
+				this.showNotice(dropProduct.i18n.uploadError, 'error');
 				return;
 			}
 
@@ -209,11 +209,11 @@
 			this.$dropInner.hide();
 			this.$progressWrap.show();
 			this.$progressFill.css('width', '0%');
-			this.$progressText.text(wcUploady.i18n.uploading);
+			this.$progressText.text(dropProduct.i18n.uploading);
 			this.$dropzone.addClass('is-uploading');
 
 			$.ajax({
-				url: wcUploady.ajaxUrl,
+				url: dropProduct.ajaxUrl,
 				type: 'POST',
 				data: formData,
 				processData: false,
@@ -224,7 +224,7 @@
 						if (e.lengthComputable) {
 							var pct = Math.round((e.loaded / e.total) * 100);
 							self.$progressFill.css('width', pct + '%');
-							self.$progressText.text(wcUploady.i18n.uploading + ' ' + pct + '%');
+							self.$progressText.text(dropProduct.i18n.uploading + ' ' + pct + '%');
 						}
 					});
 					return xhr;
@@ -239,12 +239,12 @@
 							'success'
 						);
 					} else {
-						self.showNotice(response.data.message || wcUploady.i18n.uploadError, 'error');
+						self.showNotice(response.data.message || dropProduct.i18n.uploadError, 'error');
 					}
 				},
 				error: function () {
 					self.resetDropzone();
-					self.showNotice(wcUploady.i18n.networkError, 'error');
+					self.showNotice(dropProduct.i18n.networkError, 'error');
 				}
 			});
 		},
@@ -270,7 +270,7 @@
 
 			$.each(products, function (i, product) {
 				// Skip if row already exists (e.g. from load + upload).
-				if ($('#wc-uploady-row-' + product.id).length) {
+				if ($('#dropproduct-row-' + product.id).length) {
 					return;
 				}
 				self.$gridBody.prepend(self.buildRow(product));
@@ -287,56 +287,56 @@
 		 */
 		buildRow: function (product) {
 			var galleryBadge = product.gallery_count > 0
-				? '<span class="wc-uploady-gallery-badge">+' + product.gallery_count + '</span>'
+				? '<span class="dropproduct-gallery-badge">+' + product.gallery_count + '</span>'
 				: '';
 
 			var stockOptions = this.buildStockOptions(product.stock_status);
 			var categoryOptions = this.buildCategoryOptions(product.category_id);
 			var statusClass = product.status === 'publish' ? 'publish' : 'draft';
 
-			return '<tr id="wc-uploady-row-' + product.id + '" data-product-id="' + product.id + '">'
-				+ '<td class="wc-uploady-col-image">'
+			return '<tr id="dropproduct-row-' + product.id + '" data-product-id="' + product.id + '">'
+				+ '<td class="dropproduct-col-image">'
 				+ (product.image_thumb
-					? '<img src="' + product.image_thumb + '" alt="" class="wc-uploady-thumb" data-full="' + product.image_full + '" />'
+					? '<img src="' + product.image_thumb + '" alt="" class="dropproduct-thumb" data-full="' + product.image_full + '" />'
 					: '<span class="dashicons dashicons-format-image" style="font-size:40px;color:#dcdcde;"></span>')
 				+ galleryBadge
 				+ '</td>'
-				+ '<td class="wc-uploady-col-title">'
-				+ '<input type="text" class="wc-uploady-editable" data-field="title" value="' + this.escAttr(product.title) + '" />'
+				+ '<td class="dropproduct-col-title">'
+				+ '<input type="text" class="dropproduct-editable" data-field="title" value="' + this.escAttr(product.title) + '" />'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-desc">'
-				+ '<button type="button" class="wc-uploady-desc-btn' + (product.description ? ' has-desc' : '') + '" title="Edit description">'
+				+ '<td class="dropproduct-col-desc">'
+				+ '<button type="button" class="dropproduct-desc-btn' + (product.description ? ' has-desc' : '') + '" title="Edit description">'
 				+ '<span class="dashicons dashicons-edit"></span>'
-				+ (product.description ? '<span class="wc-uploady-desc-dot"></span>' : '')
+				+ (product.description ? '<span class="dropproduct-desc-dot"></span>' : '')
 				+ '</button>'
-				+ '<input type="hidden" class="wc-uploady-desc-value" value="' + this.escAttr(product.description) + '" />'
+				+ '<input type="hidden" class="dropproduct-desc-value" value="' + this.escAttr(product.description) + '" />'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-price">'
-				+ '<div class="wc-uploady-price-wrap">'
-				+ '<span class="wc-uploady-currency">$</span>'
-				+ '<input type="number" class="wc-uploady-editable wc-uploady-price-input" data-field="regular_price" value="' + this.escAttr(product.regular_price) + '" step="0.01" min="0" placeholder="0.00" />'
+				+ '<td class="dropproduct-col-price">'
+				+ '<div class="dropproduct-price-wrap">'
+				+ '<span class="dropproduct-currency">$</span>'
+				+ '<input type="number" class="dropproduct-editable dropproduct-price-input" data-field="regular_price" value="' + this.escAttr(product.regular_price) + '" step="0.01" min="0" placeholder="0.00" />'
 				+ '</div>'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-sale-price">'
-				+ '<div class="wc-uploady-price-wrap">'
-				+ '<span class="wc-uploady-currency">$</span>'
-				+ '<input type="number" class="wc-uploady-editable wc-uploady-price-input" data-field="sale_price" value="' + this.escAttr(product.sale_price) + '" step="0.01" min="0" placeholder="0.00" />'
+				+ '<td class="dropproduct-col-sale-price">'
+				+ '<div class="dropproduct-price-wrap">'
+				+ '<span class="dropproduct-currency">$</span>'
+				+ '<input type="number" class="dropproduct-editable dropproduct-price-input" data-field="sale_price" value="' + this.escAttr(product.sale_price) + '" step="0.01" min="0" placeholder="0.00" />'
 				+ '</div>'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-sku">'
-				+ '<input type="text" class="wc-uploady-editable" data-field="sku" value="' + this.escAttr(product.sku) + '" />'
+				+ '<td class="dropproduct-col-sku">'
+				+ '<input type="text" class="dropproduct-editable" data-field="sku" value="' + this.escAttr(product.sku) + '" />'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-stock">'
-				+ '<select class="wc-uploady-editable" data-field="stock_status">' + stockOptions + '</select>'
+				+ '<td class="dropproduct-col-stock">'
+				+ '<select class="dropproduct-editable" data-field="stock_status">' + stockOptions + '</select>'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-category">'
-				+ '<select class="wc-uploady-editable" data-field="category">' + categoryOptions + '</select>'
+				+ '<td class="dropproduct-col-category">'
+				+ '<select class="dropproduct-editable" data-field="category">' + categoryOptions + '</select>'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-status">'
-				+ '<span class="wc-uploady-status wc-uploady-status--' + statusClass + '">' + product.status + '</span>'
+				+ '<td class="dropproduct-col-status">'
+				+ '<span class="dropproduct-status dropproduct-status--' + statusClass + '">' + product.status + '</span>'
 				+ '</td>'
-				+ '<td class="wc-uploady-col-actions">'
-				+ '<button type="button" class="wc-uploady-delete-btn" title="Delete">'
+				+ '<td class="dropproduct-col-actions">'
+				+ '<button type="button" class="dropproduct-delete-btn" title="Delete">'
 				+ '<span class="dashicons dashicons-trash"></span>'
 				+ '</button>'
 				+ '</td>'
@@ -370,7 +370,7 @@
 		 */
 		buildCategoryOptions: function (selectedId) {
 			var html = '<option value="">— None —</option>';
-			var cats = wcUploady.categories || {};
+			var cats = dropProduct.categories || {};
 
 			$.each(cats, function (id, name) {
 				var sel = parseInt(id) === parseInt(selectedId) ? ' selected' : '';
@@ -394,9 +394,9 @@
 
 			$field.removeClass('is-saved is-error').addClass('is-saving');
 
-			$.post(wcUploady.ajaxUrl, {
-				action: 'wc_uploady_update_product',
-				nonce: wcUploady.nonce,
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_update_product',
+				nonce: dropProduct.nonce,
 				product_id: productId,
 				field: field,
 				value: value
@@ -414,7 +414,7 @@
 				}
 			}).fail(function () {
 				$field.removeClass('is-saving').addClass('is-error');
-				self.showNotice(wcUploady.i18n.networkError, 'error');
+				self.showNotice(dropProduct.i18n.networkError, 'error');
 			});
 		},
 
@@ -435,7 +435,7 @@
 			var salePrice    = parseFloat($saleInput.val());
 
 			// Remove any existing warning.
-			$saleCell.find('.wc-uploady-price-warning').remove();
+			$saleCell.find('.dropproduct-price-warning').remove();
 			$saleInput.removeClass('is-error');
 
 			// Only validate when both fields have values.
@@ -446,7 +446,7 @@
 			if (salePrice >= regularPrice) {
 				$saleInput.addClass('is-error');
 				$saleCell.append(
-					'<span class="wc-uploady-price-warning">'
+					'<span class="dropproduct-price-warning">'
 					+ '<span class="dashicons dashicons-warning"></span> '
 					+ 'Sale price must be lower than regular price.'
 					+ '</span>'
@@ -465,9 +465,9 @@
 
 			$row.addClass('is-saving');
 
-			$.post(wcUploady.ajaxUrl, {
-				action: 'wc_uploady_delete_product',
-				nonce: wcUploady.nonce,
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_delete_product',
+				nonce: dropProduct.nonce,
 				product_id: productId
 			}, function (response) {
 				if (response.success) {
@@ -475,7 +475,7 @@
 						$(this).remove();
 						self.updateDraftCount();
 
-						if (!self.$gridBody.find('tr:not(#wc-uploady-empty-row)').length) {
+						if (!self.$gridBody.find('tr:not(#dropproduct-empty-row)').length) {
 							self.$emptyRow.show();
 						}
 					});
@@ -485,7 +485,7 @@
 				}
 			}).fail(function () {
 				$row.removeClass('is-saving');
-				self.showNotice(wcUploady.i18n.networkError, 'error');
+				self.showNotice(dropProduct.i18n.networkError, 'error');
 			});
 		},
 
@@ -500,7 +500,7 @@
 
 			// Clear previous validation.
 			$rows.removeClass('has-error');
-			$rows.find('.wc-uploady-editable').removeClass('is-error');
+			$rows.find('.dropproduct-editable').removeClass('is-error');
 
 			// Validate each row.
 			$rows.each(function () {
@@ -528,7 +528,7 @@
 			});
 
 			if (hasErrors && !productIds.length) {
-				this.showNotice(wcUploady.i18n.validationError, 'error');
+				this.showNotice(dropProduct.i18n.validationError, 'error');
 				return;
 			}
 
@@ -536,31 +536,31 @@
 				return;
 			}
 
-			this.$publishBtn.prop('disabled', true).text(wcUploady.i18n.publishing);
+			this.$publishBtn.prop('disabled', true).text(dropProduct.i18n.publishing);
 
-			$.post(wcUploady.ajaxUrl, {
-				action: 'wc_uploady_publish_all',
-				nonce: wcUploady.nonce,
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_publish_all',
+				nonce: dropProduct.nonce,
 				product_ids: productIds
 			}, function (response) {
 				self.$publishBtn.prop('disabled', false).html(
-					'<span class="dashicons dashicons-yes-alt"></span> ' + wcUploady.i18n.publishAll
+					'<span class="dashicons dashicons-yes-alt"></span> ' + dropProduct.i18n.publishAll
 				);
 
 				if (response.success) {
 					// Mark published rows.
 					$.each(response.data.published, function (i, id) {
-						var $row = $('#wc-uploady-row-' + id);
+						var $row = $('#dropproduct-row-' + id);
 						$row.addClass('is-published');
-						$row.find('.wc-uploady-status')
-							.removeClass('wc-uploady-status--draft')
-							.addClass('wc-uploady-status--publish')
+						$row.find('.dropproduct-status')
+							.removeClass('dropproduct-status--draft')
+							.addClass('dropproduct-status--publish')
 							.text('publish');
 					});
 
 					// Show failed ones.
 					$.each(response.data.failed, function (i, fail) {
-						var $row = $('#wc-uploady-row-' + fail.id);
+						var $row = $('#dropproduct-row-' + fail.id);
 						$row.addClass('has-error');
 					});
 
@@ -575,9 +575,9 @@
 				}
 			}).fail(function () {
 				self.$publishBtn.prop('disabled', false).html(
-					'<span class="dashicons dashicons-yes-alt"></span> ' + wcUploady.i18n.publishAll
+					'<span class="dashicons dashicons-yes-alt"></span> ' + dropProduct.i18n.publishAll
 				);
-				self.showNotice(wcUploady.i18n.networkError, 'error');
+				self.showNotice(dropProduct.i18n.networkError, 'error');
 			});
 		},
 
@@ -597,7 +597,7 @@
 		 * @param {string} type    'success', 'error', or 'info'.
 		 */
 		showNotice: function (message, type) {
-			var $notice = $('<div class="wc-uploady-notice wc-uploady-notice--' + type + '">'
+			var $notice = $('<div class="dropproduct-notice dropproduct-notice--' + type + '">'
 				+ this.escHtml(message)
 				+ '</div>');
 
@@ -642,7 +642,7 @@
 		 */
 		openDescriptionModal: function ($row) {
 			var productId = $row.data('product-id');
-			var currentDesc = $row.find('.wc-uploady-desc-value').val() || '';
+			var currentDesc = $row.find('.dropproduct-desc-value').val() || '';
 
 			this._descProductId = productId;
 			this.$descTextarea.val(this.decodeHtml(currentDesc));
@@ -673,9 +673,9 @@
 
 			this.$descSaveBtn.prop('disabled', true).text('Saving…');
 
-			$.post(wcUploady.ajaxUrl, {
-				action: 'wc_uploady_update_product',
-				nonce: wcUploady.nonce,
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_update_product',
+				nonce: dropProduct.nonce,
 				product_id: productId,
 				field: 'description',
 				value: value
@@ -684,19 +684,19 @@
 
 				if (response.success) {
 					// Update hidden value in the row.
-					var $row = $('#wc-uploady-row-' + productId);
-					$row.find('.wc-uploady-desc-value').val(value);
+					var $row = $('#dropproduct-row-' + productId);
+					$row.find('.dropproduct-desc-value').val(value);
 
 					// Toggle the indicator dot.
-					var $btn = $row.find('.wc-uploady-desc-btn');
+					var $btn = $row.find('.dropproduct-desc-btn');
 					if (value.trim()) {
 						$btn.addClass('has-desc');
-						if (!$btn.find('.wc-uploady-desc-dot').length) {
-							$btn.append('<span class="wc-uploady-desc-dot"></span>');
+						if (!$btn.find('.dropproduct-desc-dot').length) {
+							$btn.append('<span class="dropproduct-desc-dot"></span>');
 						}
 					} else {
 						$btn.removeClass('has-desc');
-						$btn.find('.wc-uploady-desc-dot').remove();
+						$btn.find('.dropproduct-desc-dot').remove();
 					}
 
 					self.closeDescriptionModal();
@@ -706,7 +706,7 @@
 				}
 			}).fail(function () {
 				self.$descSaveBtn.prop('disabled', false).text('Save');
-				self.showNotice(wcUploady.i18n.networkError, 'error');
+				self.showNotice(dropProduct.i18n.networkError, 'error');
 			});
 		},
 
@@ -755,7 +755,7 @@
 
 	// Boot when DOM is ready.
 	$(document).ready(function () {
-		Uploady.init();
+		DropProduct.init();
 	});
 
 })(jQuery);

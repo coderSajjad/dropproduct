@@ -176,7 +176,7 @@ Free Version Purpose:
 
 
  pro version featire: 
- WooCommerce Uploady – Pro Version
+ WooCommerce DropProduct – Pro Version
 🚀 Core Promise
 Professional Catalog Operations Engine for WooCommerce
 Designed for serious store owners, agencies, and high-inventory businesses that need speed, control, and intelligent automation.

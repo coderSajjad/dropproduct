@@ -6,7 +6,7 @@
  * Handles all product CRUD operations via WooCommerce's WC_Product API.
  * Abstracted for future Pro extension (variable products, etc.).
  *
- * @package WooCommerce_Uploady
+ * @package DropProduct
  * @since   1.0.0
  */
 
@@ -15,19 +15,19 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Class WC_Uploady_Product_Service
+ * Class DropProduct_Product_Service
  *
  * @since 1.0.0
  */
-class WC_Uploady_Product_Service
+class DropProduct_Product_Service
 {
 
     /**
-     * Meta key to identify products created by Uploady.
+     * Meta key to identify products created by DropProduct.
      *
      * @var string
      */
-    const META_KEY = '_wc_uploady_product';
+    const META_KEY = '_dropproduct_product';
 
     /**
      * Create a draft simple product from grouped image data.
@@ -49,7 +49,7 @@ class WC_Uploady_Product_Service
             $product->set_gallery_image_ids(array_map('absint', $gallery_ids));
         }
 
-        // Mark as created by Uploady for easy retrieval.
+        // Mark as created by DropProduct for easy retrieval.
         $product->add_meta_data(self::META_KEY, '1', true);
 
         /**
@@ -58,12 +58,12 @@ class WC_Uploady_Product_Service
          * @since 1.0.0
          * @param WC_Product_Simple $product The product about to be saved.
          */
-        do_action('wc_uploady_before_create_product', $product);
+        do_action('dropproduct_before_create_product', $product);
 
         $product_id = $product->save();
 
         if (! $product_id) {
-            return new WP_Error('create_failed', __('Failed to create product.', 'uploady'));
+            return new WP_Error('create_failed', __('Failed to create product.', 'dropproduct'));
         }
 
         /**
@@ -72,7 +72,7 @@ class WC_Uploady_Product_Service
          * @since 1.1.0
          * @param WC_Product $product The created product.
          */
-        do_action('wc_uploady_after_create_product', $product);
+        do_action('dropproduct_after_create_product', $product);
 
         return $product;
     }
@@ -90,7 +90,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'uploady'));
+            return new WP_Error('invalid_product', __('Product not found.', 'dropproduct'));
         }
 
         switch ($field) {
@@ -144,7 +144,7 @@ class WC_Uploady_Product_Service
                  * @param string     $field      The field name.
                  * @param mixed      $value      The new value.
                  */
-                do_action('wc_uploady_update_custom_field', $product, $field, $value);
+                do_action('dropproduct_update_custom_field', $product, $field, $value);
                 break;
         }
 
@@ -163,7 +163,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'uploady'));
+            return new WP_Error('invalid_product', __('Product not found.', 'dropproduct'));
         }
 
         $errors = $this->validate_for_publish($product);
@@ -181,13 +181,13 @@ class WC_Uploady_Product_Service
          * @since 1.1.0
          * @param int $product_id The published product ID.
          */
-        do_action('wc_uploady_after_publish_product', $product_id);
+        do_action('dropproduct_after_publish_product', $product_id);
 
         return true;
     }
 
     /**
-     * Delete a product created by Uploady.
+     * Delete a product created by DropProduct.
      *
      * @param int  $product_id Product ID.
      * @param bool $force      Whether to force delete (bypass trash).
@@ -198,7 +198,7 @@ class WC_Uploady_Product_Service
         $product = wc_get_product($product_id);
 
         if (! $product) {
-            return new WP_Error('invalid_product', __('Product not found.', 'uploady'));
+            return new WP_Error('invalid_product', __('Product not found.', 'dropproduct'));
         }
 
         $product->delete($force);
@@ -209,13 +209,13 @@ class WC_Uploady_Product_Service
          * @since 1.1.0
          * @param int $product_id The deleted product ID.
          */
-        do_action('wc_uploady_after_delete_product', $product_id);
+        do_action('dropproduct_after_delete_product', $product_id);
 
         return true;
     }
 
     /**
-     * Retrieve all draft products created by Uploady.
+     * Retrieve all draft products created by DropProduct.
      *
      * @return array Array of product data arrays.
      */
@@ -226,7 +226,7 @@ class WC_Uploady_Product_Service
             'limit'      => -1,
             'orderby'    => 'date',
             'order'      => 'DESC',
-            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required to retrieve only Uploady-created products.
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required to retrieve only DropProduct-created products.
             'meta_query' => array(
                 array(
                     'key'   => self::META_KEY,
@@ -282,7 +282,7 @@ class WC_Uploady_Product_Service
          * @param array      $data    Formatted product data.
          * @param WC_Product $product The product instance.
          */
-        return apply_filters('wc_uploady_format_product_data', $data, $product);
+        return apply_filters('dropproduct_format_product_data', $data, $product);
     }
 
     /**
@@ -296,11 +296,11 @@ class WC_Uploady_Product_Service
         $errors = array();
 
         if (empty(trim($product->get_name()))) {
-            $errors[] = __('Title is required.', 'uploady');
+            $errors[] = __('Title is required.', 'dropproduct');
         }
 
         if ('' === $product->get_regular_price()) {
-            $errors[] = __('Price is required.', 'uploady');
+            $errors[] = __('Price is required.', 'dropproduct');
         }
 
         /**
@@ -310,6 +310,6 @@ class WC_Uploady_Product_Service
          * @param array      $errors  Current validation errors.
          * @param WC_Product $product The product being validated.
          */
-        return apply_filters('wc_uploady_validate_product', $errors, $product);
+        return apply_filters('dropproduct_validate_product', $errors, $product);
     }
 }

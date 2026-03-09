@@ -1,12 +1,12 @@
-# Getting Started with Uploady
+# Getting Started with DropProduct
 
-Welcome to **Uploady** — the fastest way to create WooCommerce products from images.
+Welcome to **DropProduct** — the fastest way to create WooCommerce products from images.
 
 ---
 
 ## What Does It Do?
 
-Instead of creating products one at a time in WooCommerce, Uploady lets you:
+Instead of creating products one at a time in WooCommerce, DropProduct lets you:
 1. **Drag & drop** a bunch of product images
 2. Products are **created automatically** with titles from filenames
 3. **Edit** prices, categories, descriptions, and more right in the grid
@@ -26,17 +26,17 @@ What used to take hours now takes minutes.
 
 ## Installation
 
-1. Upload the `uploady` folder to `/wp-content/plugins/`
+1. Upload the `dropproduct` folder to `/wp-content/plugins/`
 2. Go to **Plugins** in your WordPress admin
-3. Click **Activate** on **Uploady**
-4. Visit **Uploady** in the admin sidebar
+3. Click **Activate** on **DropProduct**
+4. Visit **DropProduct** in the admin sidebar
 
 ---
 
 ## Quick Start Guide
 
-### Step 1: Open Uploady
-Click **Uploady** in the WordPress admin sidebar. You'll see the dropzone and an empty product grid.
+### Step 1: Open DropProduct
+Click **DropProduct** in the WordPress admin sidebar. You'll see the dropzone and an empty product grid.
 
 ### Step 2: Upload Images
 Drag product images onto the dropzone, or click **"Browse Files"** to select them from your computer.
@@ -108,7 +108,7 @@ All three will become one product called "Blue Hoodie" with a 3-image gallery.
 
 ## Limitations (Free Version)
 
-The free version supports **simple products only**. For advanced features, check out [Uploady Pro](https://Uploady.dev/pro):
+The free version supports **simple products only**. For advanced features, check out [DropProduct Pro](https://dropproduct.dev/pro):
 
 - Variable products (color/size variations)
 - Bulk editing (change many products at once)

@@ -6,15 +6,15 @@ Provide a clean service layer for WooCommerce product CRUD operations, supportin
 
 ---
 
-## Key Class: `WC_Uploady_Product_Service`
+## Key Class: `DropProduct_Product_Service`
 
-**File:** `includes/class-wc-uploady-product-service.php` (~315 lines)
+**File:** `includes/class-dropproduct-product-service.php` (~315 lines)
 
 ### Constants
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
-| `META_KEY` | `_wc_uploady_product` | Identifies Uploady-created products |
+| `META_KEY` | `_dropproduct_product` | Identifies DropProduct-created products |
 
 ### Public Methods
 
@@ -24,7 +24,7 @@ Provide a clean service layer for WooCommerce product CRUD operations, supportin
 | `update_product_field()` | `($product_id, $field, $value)` | Updates a single field on a product |
 | `publish_product()` | `($product_id)` | Validates and publishes a product |
 | `delete_product()` | `($product_id, $force = true)` | Force-deletes a product (bypasses trash) |
-| `get_draft_products()` | `()` | Returns all Uploady draft + published products |
+| `get_draft_products()` | `()` | Returns all DropProduct draft + published products |
 | `format_product_data()` | `($product)` | Converts `WC_Product` to grid-ready array |
 
 ### Private Methods
@@ -76,7 +76,7 @@ array(
 | `sku` | `sanitize_text_field()` | `set_sku()` | Wrapped in try/catch for duplicates |
 | `stock_status` | Whitelist validation | `set_stock_status()` | Only `instock`, `outofstock`, `onbackorder` |
 | `category` | `absint()` | `set_category_ids()` | Sets single category; 0 clears it |
-| *(other)* | — | `wc_uploady_update_custom_field` action | Extension point for Pro |
+| *(other)* | — | `dropproduct_update_custom_field` action | Extension point for Pro |
 
 ### SKU Duplicate Detection
 
@@ -104,18 +104,18 @@ $product->set_image_id($featured_image_id);
 $product->set_gallery_image_ids(array_map('absint', $gallery_ids));
 $product->add_meta_data(self::META_KEY, '1', true);
 
-do_action('wc_uploady_before_create_product', $product);
+do_action('dropproduct_before_create_product', $product);
 
 $product_id = $product->save();
 
-do_action('wc_uploady_after_create_product', $product);
+do_action('dropproduct_after_create_product', $product);
 ```
 
 ---
 
 ## Product Retrieval
 
-`get_draft_products()` queries for all products with the `_wc_uploady_product` meta key:
+`get_draft_products()` queries for all products with the `_dropproduct_product` meta key:
 
 ```php
 $products = wc_get_products(array(
@@ -132,7 +132,7 @@ $products = wc_get_products(array(
 ));
 ```
 
-**Note:** This retrieves both draft and published products created by Uploady, ordered newest-first.
+**Note:** This retrieves both draft and published products created by DropProduct, ordered newest-first.
 
 ---
 
@@ -140,10 +140,10 @@ $products = wc_get_products(array(
 
 | Hook | Type | Purpose |
 |------|------|---------|
-| `wc_uploady_before_create_product` | Action | Modify product before initial save |
-| `wc_uploady_after_create_product` | Action | Post-creation logic (session tagging, logging) |
-| `wc_uploady_after_publish_product` | Action | Post-publish logic |
-| `wc_uploady_after_delete_product` | Action | Post-deletion cleanup |
-| `wc_uploady_format_product_data` | Filter | Add extra fields to frontend product data |
-| `wc_uploady_validate_product` | Filter | Add custom validation rules |
-| `wc_uploady_update_custom_field` | Action | Handle custom field updates |
+| `dropproduct_before_create_product` | Action | Modify product before initial save |
+| `dropproduct_after_create_product` | Action | Post-creation logic (session tagging, logging) |
+| `dropproduct_after_publish_product` | Action | Post-publish logic |
+| `dropproduct_after_delete_product` | Action | Post-deletion cleanup |
+| `dropproduct_format_product_data` | Filter | Add extra fields to frontend product data |
+| `dropproduct_validate_product` | Filter | Add custom validation rules |
+| `dropproduct_update_custom_field` | Action | Handle custom field updates |

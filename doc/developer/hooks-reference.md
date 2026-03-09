@@ -6,9 +6,9 @@ Complete reference of WordPress hooks provided by the free plugin for extensibil
 
 ## Filters
 
-### `wc_uploady_group_images`
+### `dropproduct_group_images`
 
-**Location:** `WC_Uploady_Grouping_Engine::group()`  
+**Location:** `DropProduct_Grouping_Engine::group()`  
 **Parameters:**
 
 | Param | Type | Description |
@@ -21,9 +21,9 @@ Complete reference of WordPress hooks provided by the free plugin for extensibil
 
 ---
 
-### `wc_uploady_validate_product`
+### `dropproduct_validate_product`
 
-**Location:** `WC_Uploady_Product_Service::validate_for_publish()`  
+**Location:** `DropProduct_Product_Service::validate_for_publish()`  
 **Parameters:**
 
 | Param | Type | Description |
@@ -36,24 +36,24 @@ Complete reference of WordPress hooks provided by the free plugin for extensibil
 
 ---
 
-### `wc_uploady_localize_data`
+### `dropproduct_localize_data`
 
-**Location:** `WC_Uploady_Admin::enqueue_scripts()`  
+**Location:** `DropProduct_Admin::enqueue_scripts()`  
 **Since:** 1.1.0  
 **Parameters:**
 
 | Param | Type | Description |
 |-------|------|-------------|
-| `$data` | `array` | Localized JS data (`wcUploady` object) |
+| `$data` | `array` | Localized JS data (`dropProduct` object) |
 
 **Returns:** Extended `$data` array  
 **Purpose:** Inject additional configuration into the frontend JavaScript. The data includes `ajaxUrl`, `nonce`, `categories`, `isProActive`, and `i18n` strings.
 
 ---
 
-### `wc_uploady_format_product_data`
+### `dropproduct_format_product_data`
 
-**Location:** `WC_Uploady_Product_Service::format_product_data()`  
+**Location:** `DropProduct_Product_Service::format_product_data()`  
 **Since:** 1.1.0  
 **Parameters:**
 
@@ -69,37 +69,37 @@ Complete reference of WordPress hooks provided by the free plugin for extensibil
 
 ## Actions
 
-### `wc_uploady_before_create_product`
+### `dropproduct_before_create_product`
 
-**Location:** `WC_Uploady_Product_Service::create_draft_product()`  
+**Location:** `DropProduct_Product_Service::create_draft_product()`  
 **Since:** 1.0.0  
 **Parameters:** `WC_Product_Simple $product` — The product *before* it is saved  
 **Purpose:** Modify the product object before the initial `save()` call (e.g., set default values, add metadata).
 
-### `wc_uploady_after_create_product`
+### `dropproduct_after_create_product`
 
-**Location:** `WC_Uploady_Product_Service::create_draft_product()`  
+**Location:** `DropProduct_Product_Service::create_draft_product()`  
 **Since:** 1.1.0  
 **Parameters:** `WC_Product $product` — The saved product (has an ID)  
 **Purpose:** Run logic after a product is created (e.g., session tagging, logging, notification).
 
-### `wc_uploady_after_publish_product`
+### `dropproduct_after_publish_product`
 
-**Location:** `WC_Uploady_Product_Service::publish_product()`  
+**Location:** `DropProduct_Product_Service::publish_product()`  
 **Since:** 1.1.0  
 **Parameters:** `int $product_id`  
 **Purpose:** Run logic after a product is published (e.g., cache invalidation, notifications).
 
-### `wc_uploady_after_delete_product`
+### `dropproduct_after_delete_product`
 
-**Location:** `WC_Uploady_Product_Service::delete_product()`  
+**Location:** `DropProduct_Product_Service::delete_product()`  
 **Since:** 1.1.0  
 **Parameters:** `int $product_id`  
 **Purpose:** Run logic after a product is deleted (e.g., cleanup attachment metadata).
 
-### `wc_uploady_update_custom_field`
+### `dropproduct_update_custom_field`
 
-**Location:** `WC_Uploady_Product_Service::update_product_field()` (default case)  
+**Location:** `DropProduct_Product_Service::update_product_field()` (default case)  
 **Since:** 1.0.0  
 **Parameters:**
 
@@ -115,29 +115,29 @@ Complete reference of WordPress hooks provided by the free plugin for extensibil
 
 | Hook | Location | Since | Purpose |
 |------|----------|-------|---------|
-| `wc_uploady_after_header` | `uploady-page.php` | 1.1.0 | Inject UI after the page header (Pro: bulk actions bar, session filter) |
-| `wc_uploady_before_grid` | `uploady-page.php` | 1.1.0 | Inject UI before the product grid (Pro: session filter dropdown) |
-| `wc_uploady_after_grid` | `uploady-page.php` | 1.1.0 | Inject UI after the grid and modals (Pro: validation dashboard, activity log) |
+| `dropproduct_after_header` | `dropproduct-page.php` | 1.1.0 | Inject UI after the page header (Pro: bulk actions bar, session filter) |
+| `dropproduct_before_grid` | `dropproduct-page.php` | 1.1.0 | Inject UI before the product grid (Pro: session filter dropdown) |
+| `dropproduct_after_grid` | `dropproduct-page.php` | 1.1.0 | Inject UI after the grid and modals (Pro: validation dashboard, activity log) |
 
 ---
 
 ## AJAX Endpoints
 
-All use `wp_ajax_{action}`. Nonce key: `wc_uploady_nonce`. Capability: `manage_woocommerce`.
+All use `wp_ajax_{action}`. Nonce key: `dropproduct_nonce`. Capability: `manage_woocommerce`.
 
 | Action | Handler Method | Purpose |
 |--------|---------------|---------|
-| `wc_uploady_upload_images` | `WC_Uploady_Ajax::handle_upload_images()` | Batch upload images → group → create products |
-| `wc_uploady_upload_single_image` | `WC_Uploady_Ajax::handle_upload_single_image()` | Upload one image, return attachment ID |
-| `wc_uploady_create_products` | `WC_Uploady_Ajax::handle_create_products()` | Group attachment IDs → create products |
-| `wc_uploady_update_product` | `WC_Uploady_Ajax::handle_update_product()` | Update single field on a product |
-| `wc_uploady_publish_all` | `WC_Uploady_Ajax::handle_publish_all()` | Validate and publish multiple products |
-| `wc_uploady_delete_product` | `WC_Uploady_Ajax::handle_delete_product()` | Delete a product |
-| `wc_uploady_load_products` | `WC_Uploady_Ajax::handle_load_products()` | Load existing Uploady Products |
+| `dropproduct_upload_images` | `DropProduct_Ajax::handle_upload_images()` | Batch upload images → group → create products |
+| `dropproduct_upload_single_image` | `DropProduct_Ajax::handle_upload_single_image()` | Upload one image, return attachment ID |
+| `dropproduct_create_products` | `DropProduct_Ajax::handle_create_products()` | Group attachment IDs → create products |
+| `dropproduct_update_product` | `DropProduct_Ajax::handle_update_product()` | Update single field on a product |
+| `dropproduct_publish_all` | `DropProduct_Ajax::handle_publish_all()` | Validate and publish multiple products |
+| `dropproduct_delete_product` | `DropProduct_Ajax::handle_delete_product()` | Delete a product |
+| `dropproduct_load_products` | `DropProduct_Ajax::handle_load_products()` | Load existing DropProduct Products |
 
 ---
 
-## Localized JS Object (`wcUploady`)
+## Localized JS Object (`dropProduct`)
 
 Passed via `wp_localize_script()`:
 
@@ -146,7 +146,7 @@ Passed via `wp_localize_script()`:
 | `ajaxUrl` | `string` | WordPress admin-ajax.php URL |
 | `nonce` | `string` | Security nonce |
 | `categories` | `object` | `{id: name}` map of product categories |
-| `isProActive` | `bool` | Whether the Pro plugin is active (`WC_UPLOADY_PRO_VERSION` defined) |
+| `isProActive` | `bool` | Whether the Pro plugin is active (`DROPPRODUCT_PRO_VERSION` defined) |
 | `i18n` | `object` | All translatable UI strings |
 
 ### i18n Strings

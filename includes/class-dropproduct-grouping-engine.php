@@ -6,7 +6,7 @@
  * Groups uploaded images by filename base pattern so related images
  * become a single product with a gallery.
  *
- * @package WooCommerce_Uploady
+ * @package DropProduct
  * @since   1.0.0
  */
 
@@ -15,11 +15,11 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Class WC_Uploady_Grouping_Engine
+ * Class DropProduct_Grouping_Engine
  *
  * @since 1.0.0
  */
-class WC_Uploady_Grouping_Engine
+class DropProduct_Grouping_Engine
 {
 
     /**
@@ -56,7 +56,7 @@ class WC_Uploady_Grouping_Engine
          * @param array $buckets        Associative array of base_name => attachment IDs.
          * @param array $attachment_ids Original flat list of attachment IDs.
          */
-        $buckets = apply_filters('wc_uploady_group_images', $buckets, $attachment_ids);
+        $buckets = apply_filters('dropproduct_group_images', $buckets, $attachment_ids);
 
         $groups = array();
 

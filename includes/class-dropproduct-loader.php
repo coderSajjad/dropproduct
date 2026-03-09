@@ -6,7 +6,7 @@
  * Maintains lists of hooks registered by the plugin and fires them
  * via the WordPress Plugin API.
  *
- * @package WooCommerce_Uploady
+ * @package DropProduct
  * @since   1.0.0
  */
 
@@ -15,11 +15,11 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Class WC_Uploady_Loader
+ * Class DropProduct_Loader
  *
  * @since 1.0.0
  */
-class WC_Uploady_Loader
+class DropProduct_Loader
 {
 
     /**

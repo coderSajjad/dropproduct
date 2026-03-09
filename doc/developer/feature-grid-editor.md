@@ -12,9 +12,9 @@ Provide an inline-editable product grid that saves changes via AJAX without page
 
 The grid is a standard HTML `<table>` where each row represents a product. Editable fields use `<input>` and `<select>` elements directly in the table cells.
 
-**Key JS Method:** `buildRow(product)` in `admin-uploady.js`
+**Key JS Method:** `buildRow(product)` in `admin-dropproduct.js`
 
-Each row has `id="wc-uploady-row-{product_id}"` and `data-product-id="{id}"` for easy targeting.
+Each row has `id="dropproduct-row-{product_id}"` and `data-product-id="{id}"` for easy targeting.
 
 ### Grid Columns
 
@@ -23,11 +23,11 @@ Each row has `id="wc-uploady-row-{product_id}"` and `data-product-id="{id}"` for
 | Image | `<img>` thumbnail with hover preview | `data-full` (full-size URL) | 60px |
 | Title | `<input type="text">` | `data-field="title"` | min 180px |
 | Description | `<button>` (opens modal) + hidden `<input>` | — | 80px |
-| Regular Price | `<input type="number">` inside `wc-uploady-price-wrap` | `data-field="regular_price"` | 100px |
-| Sale Price | `<input type="number">` inside `wc-uploady-price-wrap` | `data-field="sale_price"` | 100px |
+| Regular Price | `<input type="number">` inside `dropproduct-price-wrap` | `data-field="regular_price"` | 100px |
+| Sale Price | `<input type="number">` inside `dropproduct-price-wrap` | `data-field="sale_price"` | 100px |
 | SKU | `<input type="text">` | `data-field="sku"` | 120px |
 | Stock | `<select>` (In stock / Out of stock / On backorder) | `data-field="stock_status"` | 120px |
-| Category | `<select>` (populated from `wcUploady.categories`) | `data-field="category"` | 140px |
+| Category | `<select>` (populated from `dropProduct.categories`) | `data-field="category"` | 140px |
 | Status | `<span>` badge (draft/publish) | — | 80px |
 | Actions | Delete button | — | 80px |
 
@@ -36,9 +36,9 @@ Each row has `id="wc-uploady-row-{product_id}"` and `data-product-id="{id}"` for
 Both Regular Price and Sale Price use the same price wrapper structure:
 
 ```html
-<div class="wc-uploady-price-wrap">
-    <span class="wc-uploady-currency">$</span>
-    <input type="number" class="wc-uploady-editable wc-uploady-price-input"
+<div class="dropproduct-price-wrap">
+    <span class="dropproduct-currency">$</span>
+    <input type="number" class="dropproduct-editable dropproduct-price-input"
            data-field="regular_price" step="0.01" min="0" placeholder="0.00" />
 </div>
 ```
@@ -50,7 +50,7 @@ The currency symbol is displayed as a prefix label. The `price-wrap` div handles
 If a product has gallery images, a small badge is shown next to the thumbnail:
 
 ```html
-<span class="wc-uploady-gallery-badge">+3</span>
+<span class="dropproduct-gallery-badge">+3</span>
 ```
 
 ---
@@ -59,11 +59,11 @@ If a product has gallery images, a small badge is shown next to the thumbnail:
 
 ### Mechanism
 
-All fields with class `wc-uploady-editable` trigger auto-save:
+All fields with class `dropproduct-editable` trigger auto-save:
 - **Text/number inputs** save on `blur` event
 - **Select dropdowns** save on `change` event
 
-**Key JS Method:** `saveField($field)` in `admin-uploady.js`
+**Key JS Method:** `saveField($field)` in `admin-dropproduct.js`
 
 ```javascript
 saveField: function ($field) {
@@ -74,9 +74,9 @@ saveField: function ($field) {
 
     $field.removeClass('is-saved is-error').addClass('is-saving');
 
-    $.post(wcUploady.ajaxUrl, {
-        action: 'wc_uploady_update_product',
-        nonce: wcUploady.nonce,
+    $.post(dropProduct.ajaxUrl, {
+        action: 'dropproduct_update_product',
+        nonce: dropProduct.nonce,
         product_id: productId,
         field: field,
         value: value
@@ -100,7 +100,7 @@ saveField: function ($field) {
 | `is-saved` | Successfully saved | Green border + background (auto-clears after 1.5s) |
 | `is-error` | Save failed | Red border + background |
 
-**Backend Handler:** `WC_Uploady_Ajax::handle_update_product()`
+**Backend Handler:** `DropProduct_Ajax::handle_update_product()`
 
 Sanitizes input based on field type:
 - `title`, `sku`: `sanitize_text_field()`
@@ -108,7 +108,7 @@ Sanitizes input based on field type:
 - `regular_price`, `sale_price`: `wc_format_decimal()`
 - `stock_status`: validated against whitelist (`instock`, `outofstock`, `onbackorder`)
 - `category`: `absint()` + `set_category_ids()`
-- Other fields: delegated via `wc_uploady_update_custom_field` action
+- Other fields: delegated via `dropproduct_update_custom_field` action
 
 ---
 
@@ -128,13 +128,13 @@ validatePrices: function ($row) {
     var salePrice     = parseFloat($saleInput.val());
 
     // Remove previous warning
-    $saleCell.find('.wc-uploady-price-warning').remove();
+    $saleCell.find('.dropproduct-price-warning').remove();
 
     // Validate: sale price must be lower than regular price
     if (salePrice >= regularPrice) {
         $saleInput.addClass('is-error');
         $saleCell.append(
-            '<span class="wc-uploady-price-warning">' +
+            '<span class="dropproduct-price-warning">' +
             '<span class="dashicons dashicons-warning"></span> ' +
             'Sale price must be lower than regular price.' +
             '</span>'
@@ -143,7 +143,7 @@ validatePrices: function ($row) {
 }
 ```
 
-The warning appears as a red tooltip above the sale price cell, styled with CSS animation (`wcUploadyTooltipIn`).
+The warning appears as a red tooltip above the sale price cell, styled with CSS animation (`dropProductTooltipIn`).
 
 ---
 
@@ -154,7 +154,7 @@ The warning appears as a red tooltip above the sale price cell, styled with CSS 
 When the user hovers over a product thumbnail, a larger preview appears near the cursor.
 
 **JS Implementation:**
-- `mouseenter` on `.wc-uploady-thumb` — loads full-size URL from `data-full` attribute into preview `<img>`
+- `mouseenter` on `.dropproduct-thumb` — loads full-size URL from `data-full` attribute into preview `<img>`
 - `mousemove` — updates preview position via `positionPreview(e)`
 - `mouseleave` — hides preview and clears src
 
@@ -184,7 +184,7 @@ positionPreview: function (e) {
 Short descriptions are edited via a modal popup instead of inline (to handle multiline text).
 
 1. Click the description pencil icon → `openDescriptionModal($row)`
-2. Modal loads current description from a hidden field (`<input class="wc-uploady-desc-value">`) in the row
+2. Modal loads current description from a hidden field (`<input class="dropproduct-desc-value">`) in the row
 3. Description is decoded from HTML entities via `decodeHtml()`
 4. User edits in a `<textarea>`
 5. Click "Save" → `saveDescription()` sends AJAX POST with `field: 'description'`
@@ -194,7 +194,7 @@ Short descriptions are edited via a modal popup instead of inline (to handle mul
 ### Description Indicator
 
 - Button class `has-desc` — when description exists, button turns green with a green status dot
-- Green dot indicator (`<span class="wc-uploady-desc-dot">`) appears at top-right of the button
+- Green dot indicator (`<span class="dropproduct-desc-dot">`) appears at top-right of the button
 - When description is cleared, the dot and class are removed
 
 ---
@@ -203,13 +203,13 @@ Short descriptions are edited via a modal popup instead of inline (to handle mul
 
 | File | Role |
 |------|------|
-| `admin-uploady.js` → `buildRow()` | Row HTML generation (10 columns) |
-| `admin-uploady.js` → `saveField()` | Auto-save handler |
-| `admin-uploady.js` → `validatePrices()` | Client-side price validation |
-| `admin-uploady.js` → `bindEvents()` | All event listeners |
-| `admin-uploady.js` → `positionPreview()` | Image preview positioning |
-| `admin-uploady.js` → `openDescriptionModal()` / `saveDescription()` | Description modal workflow |
-| `class-wc-uploady-ajax.php` → `handle_update_product()` | Server-side field update |
-| `class-wc-uploady-product-service.php` → `update_product_field()` | WC CRUD operations |
-| `uploady-page.php` | Grid table structure + description modal HTML |
-| `admin-uploady.css` | Saving/saved/error states, price-wrap, preview styles, tooltip animation |
+| `admin-dropproduct.js` → `buildRow()` | Row HTML generation (10 columns) |
+| `admin-dropproduct.js` → `saveField()` | Auto-save handler |
+| `admin-dropproduct.js` → `validatePrices()` | Client-side price validation |
+| `admin-dropproduct.js` → `bindEvents()` | All event listeners |
+| `admin-dropproduct.js` → `positionPreview()` | Image preview positioning |
+| `admin-dropproduct.js` → `openDescriptionModal()` / `saveDescription()` | Description modal workflow |
+| `class-dropproduct-ajax.php` → `handle_update_product()` | Server-side field update |
+| `class-dropproduct-product-service.php` → `update_product_field()` | WC CRUD operations |
+| `dropproduct-page.php` | Grid table structure + description modal HTML |
+| `admin-dropproduct.css` | Saving/saved/error states, price-wrap, preview styles, tooltip animation |
