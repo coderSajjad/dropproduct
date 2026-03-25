@@ -129,6 +129,8 @@ class DropProduct_Admin
         $localize_data = apply_filters('dropproduct_localize_data', $localize_data);
 
         wp_localize_script('dropproduct-admin', 'dropProduct', $localize_data);
+
+        wp_add_inline_script('dropproduct-admin', 'document.body.classList.add("dropproduct-page");', 'before');
     }
 
     /**

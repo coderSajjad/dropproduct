@@ -10,7 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<script>document.body.classList.add('dropproduct-page');</script>
 <div class="wrap dropproduct-wrap">
 	<div class="dropproduct-header">
 		<div class="dropproduct-header__left">

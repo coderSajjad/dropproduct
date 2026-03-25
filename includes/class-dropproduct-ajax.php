@@ -67,18 +67,18 @@ class DropProduct_Ajax
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; file array handled by media_handle_sideload.
-        $files         = $this->normalize_files_array($_FILES['images']);
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; elements sanitized in normalize_files_array() via sanitize_file_upload().
+        $files         = $this->normalize_files_array( $_FILES['images'] );
         $attachment_ids = array();
 
-        foreach ($files as $file) {
-            // Construct a single-file $_FILES entry for media_handle_sideload.
+        foreach ( $files as $file ) {
+            // File elements are already sanitized by normalize_files_array().
             $file_array = array(
-                'name'     => sanitize_file_name($file['name']),
-                'type'     => $file['type'],
+                'name'     => sanitize_file_name( $file['name'] ),
+                'type'     => sanitize_mime_type( $file['type'] ),
                 'tmp_name' => $file['tmp_name'],
-                'error'    => $file['error'],
-                'size'     => $file['size'],
+                'error'    => intval( $file['error'] ),
+                'size'     => intval( $file['size'] ),
             );
 
             // Validate file type.
@@ -243,21 +243,21 @@ class DropProduct_Ajax
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; file array handled by media_handle_sideload.
-        $file = $_FILES['image'];
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; elements sanitized via sanitize_file_upload().
+        $file = $this->sanitize_file_upload( $_FILES['image'] );
 
         // Validate file type.
-        $check = wp_check_filetype_and_ext($file['tmp_name'], $file['name']);
-        if (! $check['type'] || ! in_array($check['type'], $this->allowed_mime_types(), true)) {
-            wp_send_json_error(array('message' => __('Invalid file type.', 'dropproduct')));
+        $check = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
+        if ( ! $check['type'] || ! in_array( $check['type'], $this->allowed_mime_types(), true ) ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid file type.', 'dropproduct' ) ) );
         }
 
         $file_array = array(
-            'name'     => sanitize_file_name($file['name']),
-            'type'     => $file['type'],
+            'name'     => sanitize_file_name( $file['name'] ),
+            'type'     => sanitize_mime_type( $file['type'] ),
             'tmp_name' => $file['tmp_name'],
-            'error'    => $file['error'],
-            'size'     => $file['size'],
+            'error'    => intval( $file['error'] ),
+            'size'     => intval( $file['size'] ),
         );
 
         $attachment_id = media_handle_sideload($file_array, 0);
@@ -327,27 +327,46 @@ class DropProduct_Ajax
      * @param array $files $_FILES array for the field.
      * @return array Normalized array of individual file arrays.
      */
-    private function normalize_files_array($files)
+    private function normalize_files_array( $files )
     {
         $normalized = array();
 
-        if (! is_array($files['name'])) {
-            return array($files);
+        if ( ! is_array( $files['name'] ) ) {
+            return array( $this->sanitize_file_upload( $files ) );
         }
 
-        $count = count($files['name']);
+        $count = count( $files['name'] );
 
-        for ($i = 0; $i < $count; $i++) {
-            $normalized[] = array(
-                'name'     => $files['name'][$i],
-                'type'     => $files['type'][$i],
-                'tmp_name' => $files['tmp_name'][$i],
-                'error'    => $files['error'][$i],
-                'size'     => $files['size'][$i],
-            );
+        for ( $i = 0; $i < $count; $i++ ) {
+            $normalized[] = $this->sanitize_file_upload( array(
+                'name'     => $files['name'][ $i ],
+                'type'     => $files['type'][ $i ],
+                'tmp_name' => $files['tmp_name'][ $i ],
+                'error'    => $files['error'][ $i ],
+                'size'     => $files['size'][ $i ],
+            ) );
         }
 
         return $normalized;
+    }
+
+    /**
+     * Sanitize individual elements of a file upload array.
+     *
+     * @param array $file Single file array from $_FILES.
+     * @return array Sanitized file array.
+     */
+    private function sanitize_file_upload( $file )
+    {
+        return array(
+            'name'     => sanitize_file_name( $file['name'] ),
+            'type'     => sanitize_mime_type( $file['type'] ),
+            // The tmp_name is a server-generated temporary file path, not user input.
+            // It is validated by wp_check_filetype_and_ext() before use.
+            'tmp_name' => $file['tmp_name'],
+            'error'    => intval( $file['error'] ),
+            'size'     => intval( $file['size'] ),
+        );
     }
 
     /**
