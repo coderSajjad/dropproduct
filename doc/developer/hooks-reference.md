@@ -109,7 +109,23 @@ Complete reference of WordPress hooks provided by the free plugin for extensibil
 | `$field` | `string` | The field name |
 | `$value` | `mixed` | The new value |
 
-**Purpose:** Handle custom field updates that aren't covered by the built-in field mapping. Pro uses this for variable product fields, custom attributes, etc.
+**Purpose:** Handle custom field updates that aren't covered by the built-in field mapping. Note: `cost_price` is now a first-class built-in case (v1.0.2) and no longer falls through to this action.
+
+---
+
+### `dropproduct_fraud_score` *(reserved — v1.0.3)*
+
+**Location:** `DropProduct_Fraud_Shield` (not yet called — reserved)  
+**Since:** *(planned 1.0.3)*  
+**Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `$result` | `array` | `['score' => int, 'rules' => string[]]` |
+| `$data` | `array` | Checkout data (email, ip, phone, etc.) |
+
+**Returns:** Modified `$result`  
+**Purpose:** Add custom scoring rules to the Order Shield engine without modifying core code.
 
 ### Template Actions
 
@@ -130,40 +146,49 @@ All use `wp_ajax_{action}`. Nonce key: `dropproduct_nonce`. Capability: `manage_
 | `dropproduct_upload_images` | `DropProduct_Ajax::handle_upload_images()` | Batch upload images → group → create products |
 | `dropproduct_upload_single_image` | `DropProduct_Ajax::handle_upload_single_image()` | Upload one image, return attachment ID |
 | `dropproduct_create_products` | `DropProduct_Ajax::handle_create_products()` | Group attachment IDs → create products |
-| `dropproduct_update_product` | `DropProduct_Ajax::handle_update_product()` | Update single field on a product |
+| `dropproduct_update_product` | `DropProduct_Ajax::handle_update_product()` | Update single field on a product (incl. `cost_price`) |
+| `dropproduct_publish_single` | `DropProduct_Ajax::handle_publish_single()` | Publish a single draft product (v1.0.1) |
 | `dropproduct_publish_all` | `DropProduct_Ajax::handle_publish_all()` | Validate and publish multiple products |
 | `dropproduct_delete_product` | `DropProduct_Ajax::handle_delete_product()` | Delete a product |
-| `dropproduct_load_products` | `DropProduct_Ajax::handle_load_products()` | Load existing DropProduct Products |
+| `dropproduct_load_products` | `DropProduct_Ajax::handle_load_products()` | Load existing DropProduct products |
+| `dropproduct_bulk_price_adjust` | `DropProduct_Ajax::handle_bulk_price_adjust()` | Bulk adjust prices for selected products (v1.0.1) |
+
+**Order Shield endpoints** (separate nonce: `dpshield_admin`, capability: `manage_woocommerce`):
+
+| Action | Purpose |
+|--------|--------|
+| `dropproduct_save_fraud_settings` | Save Order Shield settings to WP option |
+| `dropproduct_fraud_delete_log` | Delete a single fraud log entry |
+| `dropproduct_fraud_clear_logs` | Truncate the entire fraud log table |
 
 ---
 
-## Localized JS Object (`dropProduct`)
+## Localized JS Objects
+
+### `dropProduct` (main grid page)
 
 Passed via `wp_localize_script()`:
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `ajaxUrl` | `string` | WordPress admin-ajax.php URL |
-| `nonce` | `string` | Security nonce |
+| `nonce` | `string` | Security nonce (`dropproduct_nonce`) |
 | `categories` | `object` | `{id: name}` map of product categories |
-| `isProActive` | `bool` | Whether the Pro plugin is active (`DROPPRODUCT_PRO_VERSION` defined) |
+| `isProActive` | `bool` | Whether the Pro plugin is active |
 | `i18n` | `object` | All translatable UI strings |
 
-### i18n Strings
+### `dpShield` (Order Shield page)
 
-| Key | Default Value |
-|-----|---------------|
-| `dropzone` | "Drag & drop product images here, or click to browse" |
-| `uploading` | "Uploading…" |
-| `saving` | "Saving…" |
-| `saved` | "Saved" |
-| `publishing` | "Publishing…" |
-| `published` | "Published!" |
-| `publishAll` | "Publish All" |
-| `deleteConfirm` | "Delete this product?" |
-| `noProducts` | "No draft products yet. Upload images to get started." |
-| `titleRequired` | "Title is required" |
-| `priceRequired` | "Price is required" |
-| `validationError` | "Fix highlighted errors before publishing." |
-| `uploadError` | "Upload failed. Please try again." |
-| `networkError` | "Network error. Please try again." |
+Passed via `wp_localize_script()` on the Order Shield admin page only:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `ajaxUrl` | `string` | WordPress admin-ajax.php URL |
+| `nonce` | `string` | Security nonce (`dpshield_admin`) |
+| `saving` | `string` | "Saving…" |
+| `saved` | `string` | "Saved!" |
+| `saveBtnLabel` | `string` | "Save Settings" |
+| `networkError` | `string` | "Network error. Please try again." |
+| `confirmDelete` | `string` | "Delete this log entry?" |
+| `confirmClear` | `string` | "Clear ALL log entries? This cannot be undone." |
+| `logsCleared` | `string` | "All logs cleared." |

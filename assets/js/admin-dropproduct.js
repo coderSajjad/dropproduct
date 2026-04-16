@@ -2,7 +2,8 @@
  * WooCommerce DropProduct – Bulk Product Creator — Admin JavaScript
  *
  * SPA-style grid with drag & drop upload, inline editing,
- * auto-save, image preview, and bulk publish.
+ * auto-save, image preview, bulk publish, individual publish,
+ * delete confirmation modal, and Pro lock popup.
  *
  * @package DropProduct
  * @since   1.0.0
@@ -19,6 +20,9 @@
 		init: function () {
 			this.cache();
 			this.cacheModal();
+			this.cacheDeleteModal();
+			this.cacheProPopup();
+			this.cachePriceSlasher();
 			this.bindEvents();
 			this.loadExistingProducts();
 		},
@@ -55,6 +59,49 @@
 			this.$descCancelBtn = $('#dropproduct-desc-cancel');
 			this.$descCloseBtn = $('#dropproduct-desc-close');
 			this._descProductId = 0;
+		},
+
+		/**
+		 * Cache delete confirmation modal elements.
+		 */
+		cacheDeleteModal: function () {
+			this.$confirmOverlay = $('#dropproduct-confirm-overlay');
+			this.$confirmModal = $('#dropproduct-confirm-modal');
+			this.$confirmCancel = $('#dropproduct-confirm-cancel');
+			this.$confirmDelete = $('#dropproduct-confirm-delete');
+			this._deleteRow = null;
+		},
+
+		/**
+		 * Cache Pro lock popup elements (free version only).
+		 */
+		cacheProPopup: function () {
+			this.$proOverlay = $('#dropproduct-pro-overlay');
+			this.$proPopup = $('#dropproduct-pro-popup');
+			this.$proPopupClose = $('#dropproduct-pro-popup-close');
+			this.$proPopupX = $('#dropproduct-pro-popup-x');
+		},
+
+		/**
+		 * Cache Price Slasher bar elements.
+		 */
+		cachePriceSlasher: function () {
+			this.$slasherBar       = $('#dropproduct-slasher-bar');
+			this.$slasherToggleBtn = $('#dropproduct-slasher-toggle-btn');
+			this.$slasherCount     = $('#dropproduct-slasher-count');     // badge on button
+			this.$slasherCountBar  = $('#dropproduct-slasher-count-bar'); // badge inside bar
+			this.$slasherField     = $('#dropproduct-slasher-field');
+			this.$slasherAmount    = $('#dropproduct-slasher-amount');
+			this.$slasherType      = $('#dropproduct-slasher-type');
+			this.$slasherApply     = $('#dropproduct-slasher-apply');
+			this.$slasherClear     = $('#dropproduct-slasher-clear');
+			this.$selectAll        = $('#dropproduct-select-all');
+			// Tracks selected product IDs {id: true}.
+			this._selectedIds      = {};
+			// Active operation: 'increase' | 'decrease'.
+			this._slasherOp        = 'increase';
+			// Whether the slasher bar is expanded.
+			this._slasherOpen      = false;
 		},
 
 		/**
@@ -102,7 +149,32 @@
 				var fieldName = $(this).data('field');
 				if (fieldName === 'regular_price' || fieldName === 'sale_price') {
 					self.validatePrices($(this).closest('tr'));
+					// Recalculate profit/margin when selling price changes.
+					self.calculateFinancials($(this).closest('tr'));
 				}
+			});
+
+			// Cost Price input: instant client-side recalc + debounced AJAX save.
+			this.$gridBody.on('input', '.dropproduct-cost-input', function () {
+				var $input = $(this);
+				var $row   = $input.closest('tr');
+
+				// Instant UI update — no wait for server.
+				self.calculateFinancials($row);
+
+				// Debounced save — 600 ms after last keystroke.
+				clearTimeout($input.data('costTimer'));
+				$input.data('costTimer', setTimeout(function () {
+					self.saveCostPrice($input);
+				}, 600));
+			});
+
+			// Also save on blur (catches paste, arrow keys, tab-away).
+			this.$gridBody.on('blur', '.dropproduct-cost-input', function () {
+				var $input = $(this);
+				clearTimeout($input.data('costTimer'));
+				self.saveCostPrice($input);
+				self.calculateFinancials($input.closest('tr'));
 			});
 
 			// Also save select fields on change.
@@ -110,17 +182,37 @@
 				self.saveField($(this));
 			});
 
-			// Delete product.
+			// Delete product — open custom modal instead of confirm().
 			this.$gridBody.on('click', '.dropproduct-delete-btn', function () {
 				var $row = $(this).closest('tr');
-				if (confirm(dropProduct.i18n.deleteConfirm)) {
-					self.deleteProduct($row);
-				}
+				self.openDeleteModal($row);
+			});
+
+			// Delete modal: confirm.
+			this.$confirmDelete.on('click', function () {
+				self.confirmDelete();
+			});
+
+			// Delete modal: cancel.
+			this.$confirmCancel.on('click', function () {
+				self.closeDeleteModal();
+			});
+
+			this.$confirmOverlay.on('click', function () {
+				self.closeDeleteModal();
 			});
 
 			// Publish all.
 			this.$publishBtn.on('click', function () {
 				self.publishAll();
+			});
+
+			// Publish individual product.
+			this.$gridBody.on('click', '.dropproduct-publish-single-btn', function () {
+				var $row = $(this).closest('tr');
+				// Only publish if still a draft.
+				if ($row.hasClass('is-published')) return;
+				self.publishSingle($row);
 			});
 
 			// Image preview on hover.
@@ -161,6 +253,97 @@
 
 			this.$descOverlay.on('click', function () {
 				self.closeDescriptionModal();
+			});
+
+			// Keyboard close for description modal.
+			$(document).on('keydown', function (e) {
+				if (e.key === 'Escape') {
+					self.closeDescriptionModal();
+					self.closeDeleteModal();
+					self.closeProPopup();
+				}
+			});
+
+			// Pro feature lock triggers (shown in free version).
+			$(document).on('click', '.dropproduct-pro-lock-trigger', function (e) {
+				e.preventDefault();
+				e.stopPropagation();
+				self.openProPopup();
+			});
+
+			// Locked session bar clicks.
+			$(document).on('click keydown', '.dropproduct-locked-select', function (e) {
+				if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+				e.preventDefault();
+				self.openProPopup();
+			});
+
+			// Pro popup close.
+			if (this.$proPopupClose.length) {
+				this.$proPopupClose.on('click', function () { self.closeProPopup(); });
+			}
+			if (this.$proPopupX.length) {
+				this.$proPopupX.on('click', function () { self.closeProPopup(); });
+			}
+			if (this.$proOverlay.length) {
+				this.$proOverlay.on('click', function () { self.closeProPopup(); });
+			}
+
+			// ──── Price Slasher ─────────────────────────────────────
+
+			// Individual row checkbox.
+			this.$gridBody.on('change', '.dropproduct-row-check', function () {
+				var $row = $(this).closest('tr');
+				var id   = String($row.data('product-id'));
+				if ($(this).is(':checked')) {
+					self._selectedIds[id] = true;
+					$row.addClass('is-selected');
+				} else {
+					delete self._selectedIds[id];
+					$row.removeClass('is-selected');
+				}
+				self.updateSlasherBar();
+				self.syncSelectAll();
+			});
+
+			// Select-all checkbox.
+			this.$selectAll.on('change', function () {
+				var checked = $(this).is(':checked');
+				self.$gridBody.find('tr[data-product-id]').each(function () {
+					var $row = $(this);
+					var id   = String($row.data('product-id'));
+					$row.find('.dropproduct-row-check').prop('checked', checked);
+					if (checked) {
+						self._selectedIds[id] = true;
+						$row.addClass('is-selected');
+					} else {
+						delete self._selectedIds[id];
+						$row.removeClass('is-selected');
+					}
+				});
+				self.updateSlasherBar();
+			});
+
+			// Toggle button — open/close the slasher bar.
+			this.$slasherToggleBtn.on('click', function () {
+				self.toggleSlasherBar();
+			});
+
+			// Operation toggle (Increase / Decrease).
+			this.$slasherBar.on('click', '.dropproduct-slasher-toggle', function () {
+				self.$slasherBar.find('.dropproduct-slasher-toggle').removeClass('is-active');
+				$(this).addClass('is-active');
+				self._slasherOp = $(this).data('op');
+			});
+
+			// Apply price adjustment.
+			this.$slasherApply.on('click', function () {
+				self.adjustPrices();
+			});
+
+			// Clear selection.
+			this.$slasherClear.on('click', function () {
+				self.clearSelection();
 			});
 		},
 
@@ -293,8 +476,28 @@
 			var stockOptions = this.buildStockOptions(product.stock_status);
 			var categoryOptions = this.buildCategoryOptions(product.category_id);
 			var statusClass = product.status === 'publish' ? 'publish' : 'draft';
+			var isPublished = product.status === 'publish';
+			var isSelected  = !!this._selectedIds[String(product.id)];
 
-			return '<tr id="dropproduct-row-' + product.id + '" data-product-id="' + product.id + '">'
+			// Publish single button — hidden when already published.
+			var publishSingleBtn = isPublished
+				? ''
+				: '<button type="button" class="dropproduct-publish-single-btn" title="' + this.escAttr('Publish this product') + '">'
+					+ '<span class="dashicons dashicons-yes-alt"></span>'
+					+ '</button>';
+
+			var classes = [];
+			if (isPublished) classes.push('is-published');
+			if (isSelected)  classes.push('is-selected');
+
+			return '<tr id="dropproduct-row-' + product.id + '" data-product-id="' + product.id + '"'
+				+ (classes.length ? ' class="' + classes.join(' ') + '"' : '') + '>'
+				+ '<td class="dropproduct-col-check">'
+				+ '<label class="dropproduct-check-label">'
+				+ '<input type="checkbox" class="dropproduct-row-check"' + (isSelected ? ' checked' : '') + ' />'
+				+ '<span class="dropproduct-check-custom"></span>'
+				+ '</label>'
+				+ '</td>'
 				+ '<td class="dropproduct-col-image">'
 				+ (product.image_thumb
 					? '<img src="' + product.image_thumb + '" alt="" class="dropproduct-thumb" data-full="' + product.image_full + '" />'
@@ -336,9 +539,27 @@
 				+ '<span class="dropproduct-status dropproduct-status--' + statusClass + '">' + product.status + '</span>'
 				+ '</td>'
 				+ '<td class="dropproduct-col-actions">'
+				+ publishSingleBtn
 				+ '<button type="button" class="dropproduct-delete-btn" title="Delete">'
 				+ '<span class="dashicons dashicons-trash"></span>'
 				+ '</button>'
+				+ '</td>'
+				// Cost-to-Profit Tracker — three read/write financial columns.
+				+ '<td class="dropproduct-col-cost">'
+				+ '<div class="dropproduct-price-wrap">'
+				+ '<span class="dropproduct-currency">$</span>'
+				+ '<input type="number" class="dropproduct-cost-input" data-field="cost_price" value="' + this.escAttr(product.cost_price > 0 ? product.cost_price : '') + '" step="0.01" min="0" placeholder="0.00" />'
+				+ '</div>'
+				+ '</td>'
+				+ '<td class="dropproduct-col-profit">'
+				+ '<span class="dropproduct-profit-display">'
+				+ this.formatFinancials(product.regular_price, product.sale_price, product.cost_price).profitHtml
+				+ '</span>'
+				+ '</td>'
+				+ '<td class="dropproduct-col-margin">'
+				+ '<span class="dropproduct-margin-display">'
+				+ this.formatFinancials(product.regular_price, product.sale_price, product.cost_price).marginHtml
+				+ '</span>'
 				+ '</td>'
 				+ '</tr>';
 		},
@@ -378,6 +599,99 @@
 			});
 
 			return html;
+		},
+
+		// ── Cost-to-Profit Tracker helpers ────────────────────────────
+
+		/**
+		 * Pure calculation & HTML formatter — used by buildRow() (no DOM access).
+		 *
+		 * @param  {number|string} regularPrice
+		 * @param  {number|string} salePrice
+		 * @param  {number|string} costPrice
+		 * @return {{ profit: number, margin: number, profitHtml: string, marginHtml: string }}
+		 */
+		formatFinancials: function (regularPrice, salePrice, costPrice) {
+			var cost   = parseFloat(costPrice) || 0;
+			var sale   = parseFloat(salePrice)  || 0;
+			var reg    = parseFloat(regularPrice)|| 0;
+
+			// Use sale price if set, otherwise regular price.
+			var price  = sale > 0 ? sale : reg;
+
+			if ( cost <= 0 || price <= 0 ) {
+				return { profit: 0, margin: 0, profitHtml: '<span class="dp-finance-na">—</span>', marginHtml: '<span class="dp-finance-na">—</span>' };
+			}
+
+			var profit = price - cost;
+			var margin = (profit / price) * 100;
+
+			var profitClass = profit >= 0
+				? 'dp-finance-profit dp-finance-positive'
+				: 'dp-finance-profit dp-finance-negative';
+			var marginClass = margin >= 0
+				? 'dp-finance-margin dp-finance-positive'
+				: 'dp-finance-margin dp-finance-negative';
+
+			var profitSign  = profit >= 0 ? '+' : '';
+			var marginSign  = margin >= 0 ? '+' : '';
+
+			return {
+				profit:     profit,
+				margin:     margin,
+				profitHtml: '<span class="' + profitClass + '">' + profitSign + '$' + Math.abs(profit).toFixed(2) + '</span>',
+				marginHtml: '<span class="' + marginClass + '">' + marginSign + margin.toFixed(1) + '%</span>',
+			};
+		},
+
+		/**
+		 * Read prices from a row's DOM, compute Profit & Margin, update the cells.
+		 *
+		 * @param {jQuery} $row The <tr> element.
+		 */
+		calculateFinancials: function ($row) {
+			var regularPrice = $row.find('[data-field="regular_price"]').val();
+			var salePrice    = $row.find('[data-field="sale_price"]').val();
+			var costPrice    = $row.find('.dropproduct-cost-input').val();
+
+			var result = this.formatFinancials(regularPrice, salePrice, costPrice);
+
+			$row.find('.dropproduct-profit-display').html(result.profitHtml);
+			$row.find('.dropproduct-margin-display').html(result.marginHtml);
+		},
+
+		/**
+		 * AJAX-persist the cost price for a given row.
+		 *
+		 * @param {jQuery} $input The cost price <input> element.
+		 */
+		saveCostPrice: function ($input) {
+			var $row      = $input.closest('tr');
+			var productId = $row.data('product-id');
+			var cost      = parseFloat($input.val()) || 0;
+
+			if ( ! productId ) { return; }
+
+			// Visual saving indicator.
+			$input.addClass('is-saving').removeClass('is-saved is-error');
+
+			$.post(dropProduct.ajaxUrl, {
+				action:     'dropproduct_update_product',
+				nonce:      dropProduct.nonce,
+				product_id: productId,
+				field:      'cost_price',
+				value:      cost,
+			}, function (response) {
+				$input.removeClass('is-saving');
+				if ( response.success ) {
+					$input.addClass('is-saved');
+					setTimeout(function () { $input.removeClass('is-saved'); }, 1500);
+				} else {
+					$input.addClass('is-error');
+				}
+			}).fail(function () {
+				$input.removeClass('is-saving').addClass('is-error');
+			});
 		},
 
 		/**
@@ -454,6 +768,41 @@
 			}
 		},
 
+		// ──────────────────────────────────────────
+		//  Delete Confirmation Modal
+		// ──────────────────────────────────────────
+
+		/**
+		 * Open the custom delete confirmation modal.
+		 *
+		 * @param {jQuery} $row Table row element.
+		 */
+		openDeleteModal: function ($row) {
+			this._deleteRow = $row;
+			this.$confirmOverlay.addClass('is-open');
+			this.$confirmModal.addClass('is-open');
+		},
+
+		/**
+		 * Close the delete confirmation modal.
+		 */
+		closeDeleteModal: function () {
+			this.$confirmOverlay.removeClass('is-open');
+			this.$confirmModal.removeClass('is-open');
+			this._deleteRow = null;
+		},
+
+		/**
+		 * Execute the delete after user confirms.
+		 */
+		confirmDelete: function () {
+			var $row = this._deleteRow;
+			this.closeDeleteModal();
+			if ($row) {
+				this.deleteProduct($row);
+			}
+		},
+
 		/**
 		 * Delete a product and remove its row.
 		 *
@@ -462,6 +811,7 @@
 		deleteProduct: function ($row) {
 			var self = this;
 			var productId = $row.data('product-id');
+			var productTitle = $row.find('[data-field="title"]').val() || 'this product';
 
 			$row.addClass('is-saving');
 
@@ -479,12 +829,91 @@
 							self.$emptyRow.show();
 						}
 					});
+
+					// Show a styled notice (not a browser alert).
+					self.showNotice(
+						'<span class="dashicons dashicons-trash" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;"></span> '
+						+ self.escHtml(productTitle) + ' deleted successfully.',
+						'error'
+					);
+
 				} else {
 					$row.removeClass('is-saving');
 					self.showNotice(response.data.message, 'error');
 				}
 			}).fail(function () {
 				$row.removeClass('is-saving');
+				self.showNotice(dropProduct.i18n.networkError, 'error');
+			});
+		},
+
+		// ──────────────────────────────────────────
+		//  Publish Individual Product
+		// ──────────────────────────────────────────
+
+		/**
+		 * Publish a single draft product.
+		 *
+		 * @param {jQuery} $row Table row element.
+		 * @since 1.0.1
+		 */
+		publishSingle: function ($row) {
+			var self = this;
+			var productId = $row.data('product-id');
+			var $btn = $row.find('.dropproduct-publish-single-btn');
+			var title = $row.find('[data-field="title"]').val().trim();
+			var price = $row.find('[data-field="regular_price"]').val().trim();
+
+			// Basic client-side validation.
+			$row.removeClass('has-error');
+			$row.find('.dropproduct-editable').removeClass('is-error');
+
+			var hasError = false;
+			if (!title) {
+				$row.find('[data-field="title"]').addClass('is-error');
+				hasError = true;
+			}
+			if (!price) {
+				$row.find('[data-field="regular_price"]').addClass('is-error');
+				hasError = true;
+			}
+			if (hasError) {
+				$row.addClass('has-error');
+				self.showNotice(dropProduct.i18n.validationError, 'error');
+				return;
+			}
+
+			$btn.prop('disabled', true).addClass('is-publishing');
+
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_publish_single',
+				nonce: dropProduct.nonce,
+				product_id: productId
+			}, function (response) {
+				$btn.prop('disabled', false).removeClass('is-publishing');
+
+				if (response.success) {
+					// Mark row as published.
+					$row.addClass('is-published');
+					$row.find('.dropproduct-status')
+						.removeClass('dropproduct-status--draft')
+						.addClass('dropproduct-status--publish')
+						.text('publish');
+
+					// Remove the publish button since it's now live.
+					$btn.fadeOut(200, function () { $(this).remove(); });
+
+					self.updateDraftCount();
+					self.showNotice(
+						'<span class="dashicons dashicons-yes-alt" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;"></span> '
+						+ self.escHtml(title) + ' published successfully.',
+						'success'
+					);
+				} else {
+					self.showNotice(response.data.message, 'error');
+				}
+			}).fail(function () {
+				$btn.prop('disabled', false).removeClass('is-publishing');
 				self.showNotice(dropProduct.i18n.networkError, 'error');
 			});
 		},
@@ -556,6 +985,8 @@
 							.removeClass('dropproduct-status--draft')
 							.addClass('dropproduct-status--publish')
 							.text('publish');
+						// Remove individual publish button.
+						$row.find('.dropproduct-publish-single-btn').remove();
 					});
 
 					// Show failed ones.
@@ -590,15 +1021,41 @@
 			this.$publishBtn.prop('disabled', count === 0);
 		},
 
+		// ──────────────────────────────────────────
+		//  Pro Feature Lock Popup
+		// ──────────────────────────────────────────
+
+		/**
+		 * Open the Pro feature lock popup.
+		 */
+		openProPopup: function () {
+			if (!this.$proPopup.length) return;
+			this.$proOverlay.addClass('is-open');
+			this.$proPopup.addClass('is-open');
+		},
+
+		/**
+		 * Close the Pro feature lock popup.
+		 */
+		closeProPopup: function () {
+			if (!this.$proPopup.length) return;
+			this.$proOverlay.removeClass('is-open');
+			this.$proPopup.removeClass('is-open');
+		},
+
+		// ──────────────────────────────────────────
+		//  Notices
+		// ──────────────────────────────────────────
+
 		/**
 		 * Show an admin notice.
 		 *
-		 * @param {string} message Notice text.
+		 * @param {string} message Notice text (may contain HTML for icons).
 		 * @param {string} type    'success', 'error', or 'info'.
 		 */
 		showNotice: function (message, type) {
 			var $notice = $('<div class="dropproduct-notice dropproduct-notice--' + type + '">'
-				+ this.escHtml(message)
+				+ message
 				+ '</div>');
 
 			this.$notices.prepend($notice);
@@ -634,6 +1091,10 @@
 				top: y + 'px'
 			});
 		},
+
+		// ──────────────────────────────────────────
+		//  Description Modal
+		// ──────────────────────────────────────────
 
 		/**
 		 * Open the description modal for a product row.
@@ -710,6 +1171,10 @@
 			});
 		},
 
+		// ──────────────────────────────────────────
+		//  Utilities
+		// ──────────────────────────────────────────
+
 		/**
 		 * Decode HTML entities from an attribute value.
 		 *
@@ -750,7 +1215,189 @@
 				.replace(/'/g, '&#39;')
 				.replace(/</g, '&lt;')
 				.replace(/>/g, '&gt;');
+		},
+
+		// ──────────────────────────────────────
+		//  Price Slasher Methods
+		// ──────────────────────────────────────
+
+		/**
+		 * Update count badges only (button badge + bar badge).
+		 * Bar visibility is controlled separately by toggleSlasherBar().
+		 */
+		updateSlasherBar: function () {
+			var count = Object.keys(this._selectedIds).length;
+			this.$slasherCount.text(count);
+			this.$slasherCount.toggleClass('has-count', count > 0);
+			this.$slasherCountBar.text(count);
+		},
+
+		/**
+		 * Toggle the Price Slasher bar open/closed via the toolbar button.
+		 */
+		toggleSlasherBar: function () {
+			this._slasherOpen = !this._slasherOpen;
+
+			if (this._slasherOpen) {
+				this.$slasherBar.addClass('is-visible').attr('aria-hidden', 'false');
+				this.$slasherToggleBtn
+					.addClass('is-active')
+					.attr('aria-expanded', 'true');
+			} else {
+				this.$slasherBar.removeClass('is-visible').attr('aria-hidden', 'true');
+				this.$slasherToggleBtn
+					.removeClass('is-active')
+					.attr('aria-expanded', 'false');
+			}
+		},
+
+		/**
+		 * Sync the select-all checkbox state to reflect current selection.
+		 * Sets indeterminate state when only some rows are selected.
+		 */
+		syncSelectAll: function () {
+			var $rows    = this.$gridBody.find('tr[data-product-id]');
+			var total    = $rows.length;
+			var selected = Object.keys(this._selectedIds).length;
+
+			var el = this.$selectAll[0];
+			if (!el) return;
+
+			if (selected === 0) {
+				el.checked       = false;
+				el.indeterminate = false;
+			} else if (selected === total) {
+				el.checked       = true;
+				el.indeterminate = false;
+			} else {
+				el.checked       = false;
+				el.indeterminate = true;
+			}
+		},
+
+		/**
+		 * Clear the current row selection.
+		 * Does NOT close the slasher bar — user may want to adjust again.
+		 */
+		clearSelection: function () {
+			this._selectedIds = {};
+			this.$gridBody.find('.dropproduct-row-check').prop('checked', false);
+			this.$gridBody.find('tr[data-product-id]').removeClass('is-selected');
+			var el = this.$selectAll[0];
+			if (el) { el.checked = false; el.indeterminate = false; }
+			this.updateSlasherBar();
+		},
+
+		/**
+		 * Send the bulk price-adjustment AJAX request.
+		 *
+		 * The PHP handler returns a flat {id, regular_price, sale_price}
+		 * object per product so the JS can directly set each input value
+		 * without any ambiguity about field ordering.
+		 *
+		 * @since 1.0.1
+		 */
+		adjustPrices: function () {
+			var self = this;
+			var ids  = Object.keys(this._selectedIds);
+
+			if (!ids.length) {
+				this.showNotice('Select at least one product first (tick the checkboxes in the table).', 'error');
+				return;
+			}
+
+			var amount = parseFloat(this.$slasherAmount.val());
+			if (!amount || amount <= 0) {
+				this.showNotice('Enter a valid amount greater than zero.', 'error');
+				this.$slasherAmount.focus();
+				return;
+			}
+
+			var priceField = this.$slasherField.val();
+			var adjustType = this.$slasherType.val();
+			var operation  = this._slasherOp;
+
+			// Loading state.
+			this.$slasherApply
+				.prop('disabled', true)
+				.html('<span class="dashicons dashicons-update-alt spin"></span> Applying\u2026');
+
+			$.post(dropProduct.ajaxUrl, {
+				action:      'dropproduct_bulk_price_adjust',
+				nonce:       dropProduct.nonce,
+				product_ids: ids,
+				operation:   operation,
+				amount:      amount,
+				adjust_type: adjustType,
+				price_field: priceField,
+			}, function (response) {
+				self.$slasherApply
+					.prop('disabled', false)
+					.html('<span class="dashicons dashicons-tag"></span> Apply');
+
+				if (response.success) {
+					var updated   = response.data.updated;
+					var sign      = operation === 'increase' ? '+' : '\u2212';
+					var typeLabel = adjustType === 'percentage' ? amount + '%' : '$' + amount;
+
+					$.each(updated, function (i, item) {
+						var $row = $('#dropproduct-row-' + item.id);
+						if (!$row.length) return;
+
+						// Update regular price input directly.
+						var $reg = $row.find('[data-field="regular_price"]');
+						if ($reg.length && item.regular_price !== undefined && item.regular_price !== null) {
+							$reg.val(item.regular_price);
+							if (priceField === 'regular_price' || priceField === 'both') {
+								self.flashPriceCell($reg);
+							}
+						}
+
+						// Update sale price input directly.
+						var $sale = $row.find('[data-field="sale_price"]');
+						if ($sale.length && item.sale_price !== undefined && item.sale_price !== null) {
+							$sale.val(item.sale_price > 0 ? item.sale_price : '');
+							if (priceField === 'sale_price' || priceField === 'both') {
+								self.flashPriceCell($sale);
+							}
+						}
+					});
+
+					self.showNotice(
+						'<span class="dashicons dashicons-tag" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;"></span> '
+						+ sign + typeLabel + ' applied to ' + updated.length + ' product(s).',
+						'success'
+					);
+
+					// Clear selection but keep the bar open.
+					self.clearSelection();
+
+				} else {
+					self.showNotice(
+						(response.data && response.data.message) || dropProduct.i18n.networkError,
+						'error'
+					);
+				}
+			}).fail(function () {
+				self.$slasherApply
+					.prop('disabled', false)
+					.html('<span class="dashicons dashicons-tag"></span> Apply');
+				self.showNotice(dropProduct.i18n.networkError, 'error');
+			});
+		},
+
+		/**
+		 * Flash a price input cell green to signal a successful update.
+		 *
+		 * @param {jQuery} $input The price input element.
+		 */
+		flashPriceCell: function ($input) {
+			$input.addClass('price-updated');
+			setTimeout(function () {
+				$input.removeClass('price-updated');
+			}, 1400);
 		}
+
 	};
 
 	// Boot when DOM is ready.

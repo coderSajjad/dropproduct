@@ -135,6 +135,13 @@ class DropProduct_Product_Service
                 }
                 break;
 
+            case 'cost_price':
+                // Sanitize to a non-negative decimal and save to post meta.
+                $cost = max(0, (float) $value);
+                update_post_meta($product->get_id(), '_dropproduct_cost_price', wc_format_decimal($cost));
+                // No product->save() needed for meta-only update — done after the switch.
+                return true;
+
             default:
                 /**
                  * Allows Pro/add-ons to handle custom fields.
@@ -273,6 +280,8 @@ class DropProduct_Product_Service
             'status'            => $product->get_status(),
             'gallery_count'     => count($product->get_gallery_image_ids()),
             'product_type'      => $product->get_type(),
+            // Cost-to-Profit Tracker fields.
+            'cost_price'        => (float) get_post_meta($product->get_id(), '_dropproduct_cost_price', true),
         );
 
         /**

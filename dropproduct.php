@@ -3,9 +3,9 @@
  * Plugin Name: DropProduct – Bulk Product Uploader for WooCommerce
  * Plugin URI:  https://wordpress.org/plugins/dropproduct/
  * Description: The fastest way to bulk create WooCommerce products from images with drag & drop, smart grouping, inline editing, and one-click publish.
- * Version:     1.0.0
+ * Version:     1.0.2
  * Author:      Sajjad Hossain
- * Author URI:  https://github.com/coderSajjad
+ * Author URI:  https://sajjadhossain.vercel.app
  * License:     GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: dropproduct
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'DROPPRODUCT_VERSION', '1.0.0' );
+define( 'DROPPRODUCT_VERSION', '1.0.2' );
 define( 'DROPPRODUCT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DROPPRODUCT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DROPPRODUCT_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );

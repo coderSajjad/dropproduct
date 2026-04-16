@@ -20,6 +20,7 @@ DropProduct is a WordPress plugin that replaces the default WooCommerce product 
         │  - load_dependencies()     │
         │  - define_admin_hooks()    │
         │  - define_ajax_hooks()     │
+        │  - define_fraud_shield_hooks() │
         └─────────────┬─────────────┘
                       │
         ┌─────────────▼─────────────┐
@@ -27,13 +28,13 @@ DropProduct is a WordPress plugin that replaces the default WooCommerce product 
         │  (Hook Registration)       │
         └─────────────┬─────────────┘
                       │
-    ┌─────────────────┼──────────────────┐
-    │                 │                  │
-    ▼                 ▼                  ▼
-┌─────────┐   ┌────────────┐   ┌──────────────────┐
-│  Admin   │   │    AJAX    │   │  Product Service │
-│  Class   │   │  Handler   │   │  + Grouping      │
-└─────────┘   └────────────┘   └──────────────────┘
+    ┌─────────────────┼──────────────────┬──────────────────┐
+    │                 │                  │                  │
+    ▼                 ▼                  ▼                  ▼
+┌─────────┐   ┌────────────┐   ┌──────────────────┐  ┌────────────────────┐
+│  Admin   │   │    AJAX    │   │  Product Service │  │  Fraud Shield      │
+│  Class   │   │  Handler   │   │  + Grouping      │  │  + Fraud Logger    │
+└─────────┘   └────────────┘   └──────────────────┘  └────────────────────┘
 ```
 
 ---
@@ -42,25 +43,35 @@ DropProduct is a WordPress plugin that replaces the default WooCommerce product 
 
 ```
 dropproduct/
-├── dropproduct.php          # Entry point, constants, HPOS
-├── uninstall.php                     # Cleanup on uninstall
-├── readme.txt                        # WordPress.org readme
+├── dropproduct.php                              # Entry point, constants, HPOS (v1.0.2)
+├── uninstall.php                                # Cleanup on uninstall
+├── readme.txt                                   # WordPress.org readme (v1.0.2)
 ├── includes/
-│   ├── class-dropproduct.php              # Orchestrator
-│   ├── class-dropproduct-loader.php       # Hook loader
-│   ├── class-dropproduct-admin.php        # Admin UI + scripts
-│   ├── class-dropproduct-ajax.php         # AJAX handlers (7 endpoints)
-│   ├── class-dropproduct-product-service.php  # WC product CRUD
-│   └── class-dropproduct-grouping-engine.php  # Image grouping
+│   ├── class-dropproduct.php                    # Orchestrator
+│   ├── class-dropproduct-loader.php             # Hook loader
+│   ├── class-dropproduct-admin.php              # Admin UI + scripts (v1.0.2 — Order Shield menu)
+│   ├── class-dropproduct-ajax.php               # AJAX handlers (8 endpoints + bulk price)
+│   ├── class-dropproduct-product-service.php    # WC product CRUD (v1.0.2 — cost_price field)
+│   ├── class-dropproduct-grouping-engine.php    # Image grouping
+│   ├── class-dropproduct-settings.php           # Settings CRUD
+│   ├── class-dropproduct-fraud-shield.php       # Fraud engine (v1.0.2)
+│   └── class-dropproduct-fraud-logger.php       # Fraud log DB table (v1.0.2)
 ├── admin/views/
-│   └── dropproduct-page.php              # Main admin page template
+│   ├── dropproduct-page.php                     # Main admin page template (v1.0.2 — 3 new columns)
+│   ├── settings-page.php                        # Settings page template
+│   └── fraud-shield-page.php                    # Order Shield admin page (v1.0.2)
 ├── assets/
-│   ├── css/admin-dropproduct.css         # Admin styles (~990 lines)
-│   └── js/admin-dropproduct.js           # Admin JavaScript SPA (~760 lines)
+│   ├── css/
+│   │   ├── admin-dropproduct.css                # Admin styles (~2500 lines)
+│   │   └── admin-fraud-shield.css               # Order Shield styles (v1.0.2)
+│   └── js/
+│       ├── admin-dropproduct.js                 # Admin SPA (~1400 lines, v1.0.2)
+│       ├── admin-dropproduct-settings.js        # Settings page JS
+│       └── admin-fraud-shield.js                # Order Shield JS (v1.0.2)
 └── doc/
-    ├── developer/                     # Developer documentation
-    ├── user/                          # User documentation
-    └── plan.txt                       # Original plan
+    ├── developer/                               # Developer documentation
+    ├── user/                                    # User documentation
+    └── plan.txt                                 # Original plan
 ```
 
 ---
@@ -126,14 +137,17 @@ Products created by DropProduct are tagged with `_dropproduct_product` meta key 
 
 ## Class Responsibilities Summary
 
-| Class | File | Lines | Role |
+| Class | File | Since | Role |
 |-------|------|-------|------|
-| `DropProduct` | `class-dropproduct.php` | ~96 | Orchestrator — loads dependencies, wires hooks |
-| `DropProduct_Loader` | `class-dropproduct-loader.php` | ~91 | Collects & registers WordPress hooks |
-| `DropProduct_Admin` | `class-dropproduct-admin.php` | ~146 | Admin menu, asset enqueuing, page rendering |
-| `DropProduct_Ajax` | `class-dropproduct-ajax.php` | ~357 | 7 AJAX endpoint handlers |
-| `DropProduct_Product_Service` | `class-dropproduct-product-service.php` | ~315 | WooCommerce product CRUD operations |
-| `DropProduct_Grouping_Engine` | `class-dropproduct-grouping-engine.php` | ~112 | Filename-based image grouping |
+| `DropProduct` | `class-dropproduct.php` | 1.0.0 | Orchestrator — loads dependencies, wires hooks |
+| `DropProduct_Loader` | `class-dropproduct-loader.php` | 1.0.0 | Collects & registers WordPress hooks |
+| `DropProduct_Admin` | `class-dropproduct-admin.php` | 1.0.0 | Admin menu, asset enqueuing, page rendering |
+| `DropProduct_Ajax` | `class-dropproduct-ajax.php` | 1.0.0 | 8 AJAX endpoint handlers + bulk price adjust |
+| `DropProduct_Product_Service` | `class-dropproduct-product-service.php` | 1.0.0 | WC product CRUD; `cost_price` field (v1.0.2) |
+| `DropProduct_Grouping_Engine` | `class-dropproduct-grouping-engine.php` | 1.0.0 | Filename-based image grouping |
+| `DropProduct_Settings` | `class-dropproduct-settings.php` | 1.0.1 | Saves/loads plugin settings option |
+| `DropProduct_Fraud_Shield` | `class-dropproduct-fraud-shield.php` | 1.0.2 | Fraud scoring engine, WC checkout hooks, COD restriction |
+| `DropProduct_Fraud_Logger` | `class-dropproduct-fraud-logger.php` | 1.0.2 | Custom DB table for fraud audit logs |
 
 ---
 
@@ -143,19 +157,29 @@ The frontend is a single JavaScript object (`DropProduct`) inside an IIFE, struc
 
 | Method | Purpose |
 |--------|---------|
-| `init()` | Boot — calls `cache()`, `cacheModal()`, `bindEvents()`, `loadExistingProducts()` |
-| `cache()` | Caches all DOM element references |
+| `init()` | Boot — calls all cache/bind methods, then `loadExistingProducts()` |
+| `cache()` | Caches core DOM element references |
 | `cacheModal()` | Caches description modal elements |
-| `bindEvents()` | Sets up all event listeners (drag/drop, blur save, delete, publish, hover preview, description modal) |
-| `loadExistingProducts()` | AJAX call to load existing DropProduct Products on page load |
-| `uploadFiles(files)` | Builds `FormData` from files, sends AJAX upload with progress |
+| `cacheDeleteModal()` | Caches delete confirmation modal elements |
+| `cacheProPopup()` | Caches Pro lock popup elements |
+| `cachePriceSlasher()` | Caches Price Slasher bar elements and initialises `_selectedIds` |
+| `bindEvents()` | Sets up all event listeners |
+| `loadExistingProducts()` | AJAX call to load existing DropProduct products on page load |
+| `uploadFiles(files)` | Builds `FormData`, sends AJAX upload with progress |
 | `renderProducts(products)` | Renders product rows into the grid table |
-| `buildRow(product)` | Generates HTML for a single product table row |
+| `buildRow(product)` | Generates HTML for a single product table row (incl. cost/profit/margin cells) |
 | `saveField($field)` | Auto-saves a single field via AJAX on blur/change |
+| `saveCostPrice($input)` | Debounced AJAX save for the cost price input |
+| `formatFinancials(reg, sale, cost)` | Pure function — returns computed profit/margin HTML strings |
+| `calculateFinancials($row)` | Reads row DOM, calls `formatFinancials()`, updates profit/margin cells |
 | `validatePrices($row)` | Client-side sale price vs regular price validation |
-| `deleteProduct($row)` | Deletes a product with confirmation dialog |
+| `applyPriceSlasher()` | Sends bulk price adjustment AJAX, updates grid on response |
+| `toggleSlasherBar()` | Shows/hides the Price Slasher bar |
+| `publishSingle($row)` | Publishes a single draft product row |
 | `publishAll()` | Validates all drafts and batch-publishes valid ones |
 | `openDescriptionModal($row)` / `saveDescription()` / `closeDescriptionModal()` | Description popup workflow |
+| `openDeleteModal($row)` / `confirmDelete()` / `closeDeleteModal()` | Delete confirmation modal workflow |
+| `openProPopup()` / `closeProPopup()` | Pro feature lock popup |
 | `showNotice(message, type)` | Displays auto-dismissing toast notifications |
 | `positionPreview(e)` | Positions the floating image preview near cursor |
-| `escHtml()` / `escAttr()` / `decodeHtml()` | Utility functions for encoding/decoding |
+| `escHtml()` / `escAttr()` / `decodeHtml()` | Utility encoding/decoding functions |

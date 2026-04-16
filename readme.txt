@@ -1,22 +1,20 @@
 === DropProduct – Bulk Product Uploader for WooCommerce ===
 Contributors: codersajjad
-Tags: woocommerce, bulk product upload, product creator, drag drop upload, woocommerce bulk edit
+Tags: woocommerce, bulk product upload, product creator, drag drop upload, woocommerce bulk edit, fraud protection, anti-fraud
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Bulk create WooCommerce products from images. Drag & drop, auto-generate titles, edit inline, and publish in one click.
+Bulk create WooCommerce products from images. Drag & drop, inline editing, one-click publish — now with fraud protection, financial insights, and bulk price tools.
 
 == Description ==
 
 **DropProduct** is the fastest way to add products to your WooCommerce store. Stop wasting hours creating products one by one — just drag & drop your product images and let DropProduct do the rest.
 
 Upload 10, 50, or 100+ product images at once. Each image instantly becomes a draft product with a clean title generated from the filename. Edit prices, categories, SKUs, and descriptions right in the grid — everything saves automatically. When you're ready, publish all products in a single click.
-
-Whether you're launching a new store, restocking your catalog, or migrating from another platform, DropProduct turns hours of tedious work into minutes.
 
 = ⚡ How It Works =
 
@@ -36,18 +34,58 @@ Whether you're launching a new store, restocking your catalog, or migrating from
 
 = 🆓 Free Features =
 
+**Core Product Management**
+
 * **Drag & Drop Bulk Upload** — Upload unlimited product images at once (JPEG, PNG, GIF, WebP)
 * **Smart Title Generation** — Filenames like `blue-cotton-hoodie.jpg` become "Blue Cotton Hoodie" automatically
-* **Gallery Grouping** — Images sharing a base name (`shoe-1.jpg`, `shoe-2.jpg`, `shoe-3.jpg`) merge into one product with a gallery
-* **Inline Grid Editor** — Edit title, description, regular price, sale price, SKU, stock status, and category directly in the table
+* **Gallery Grouping** — Images sharing a base name merge into one product with a gallery
+* **Inline Grid Editor** — Edit title, description, regular price, sale price, SKU, stock status, category, and cost price directly in the table
 * **Auto-Save** — Every change saves instantly via AJAX — no save button needed
 * **Sale Price Validation** — Warns you if the sale price is higher than the regular price
 * **Description Editor** — Add product descriptions via a clean popup modal
 * **Hover Image Preview** — Hover over any thumbnail to see the full-size image
 * **Batch Publish with Validation** — Publish all drafts in one click; missing title or price fields are highlighted in red
+* **Individual Publish** — Publish a single draft product directly from the grid row
 * **Draft Counter** — See how many unpublished products you have at a glance
 * **HPOS Compatible** — Fully compatible with WooCommerce High-Performance Order Storage
 * **Zero Bloat** — Assets only load on the DropProduct page; no impact on the rest of your admin
+
+**💰 Quick Bulk Price Adjuster (Price Slasher)**
+
+* Apply a percentage or fixed-amount price increase/decrease to all selected products simultaneously
+* Works on Regular Price, Sale Price, or both at once
+* Toggle the Price Slasher bar on/off with a dedicated toolbar button
+* Prices are updated via AJAX — no page reload
+* Final prices are clamped to ≥ 0 and rounded to 2 decimal places
+
+**📸 Smart SEO Alt-Text Automator** *(requires toggle in Settings)*
+
+* Automatically generates and assigns SEO-friendly alt text to product images on upload
+* Parses the filename: removes extension, replaces hyphens/underscores with spaces, converts to Title Case
+* Only sets alt text when the field is currently empty — never overwrites manual work
+
+**⚙️ Cost-to-Profit Tracker**
+
+* Add a "Cost Price" to any product row — stored privately as `_dropproduct_cost_price` (never shown to customers)
+* Instant real-time calculation of **Profit** (= Selling Price − Cost) and **Margin %** (= Profit ÷ Selling Price × 100)
+* Both values update live as you type — no AJAX round-trip needed for display
+* Cost saved automatically via debounced AJAX; recalculates whenever the regular or sale price changes
+* Profit and Margin display with colour coding: green (positive), red (negative), grey (no data)
+
+**🛡️ Ultimate Order Shield** *(requires toggle in Settings)*
+
+* Full WooCommerce fraud protection engine — no external APIs
+* **Honeypot field** — invisible to real users; filled by bots → immediate block
+* **Blacklist** — block orders from specific names, phones, or email addresses
+* **Disposable email detection** — 20+ known throwaway domains blocked by default; fully editable list
+* **IP velocity limiting** — too many orders from the same IP within 1 hour scores +30 risk points
+* **IP / Billing country mismatch** — uses WC Geolocation (no external API); adds risk score and private order note
+* **Card testing protection** — excessive failed payment attempts trigger an immediate block
+* **Checkout speed check** — orders submitted faster than a configurable threshold are scored as suspicious
+* **Configurable thresholds** — separate block and review thresholds; force On-Hold instead of block if preferred
+* **Cash on Delivery restriction** — automatically hide COD for high-risk customers
+* **Activity Log** — every checkout check is logged with IP, email, risk score, triggered rules, and final action
+* **Admin settings panel** — full control via DropProduct → 🛡️ Order Shield menu
 
 = ⭐ Pro Features =
 
@@ -55,23 +93,19 @@ Unlock the full power of DropProduct with [DropProduct Pro](https://dropproduct.
 
 * **Bulk Editing** — Select multiple products and set price, category, stock, tax class, or shipping class for all of them at once
 * **Product Duplication** — Clone any product row with one click
-* **Validation Dashboard** — Pre-publish validation report with issue breakdown: missing prices, categories, duplicate SKUs, broken images
-* **Variable Product Support** — Auto-detect color/size variations from filenames and create WooCommerce Variable Products with attributes
-* **Advanced Grouping Engine** — Strip common words (front, back, final, hd), custom prefixes/suffixes for smarter image grouping
-* **Template Presets** — Set default category, stock status, tax class, and shipping class — auto-applied to every new product
-* **Session Management** — Track upload sessions, filter products by session, and rollback entire sessions if needed
+* **Validation Dashboard** — Pre-publish validation report with issue breakdown
+* **Variable Product Support** — Auto-detect color/size variations from filenames
+* **Advanced Grouping Engine** — Custom prefixes/suffixes for smarter image grouping
+* **Template Presets** — Default category, stock, tax class auto-applied to every new product
+* **Session Management** — Track upload sessions and rollback entire batches
 * **SEO Tools** — Edit URL slugs, meta descriptions (Yoast + Rank Math compatible), and image ALT text inline
-* **Activity Log** — Full audit trail of all actions: creates, publishes, deletes, bulk edits
-* **Performance Controls** — Configure batch size, safe mode, and retry attempts based on your server
-* **Server Info Dashboard** — View PHP version, memory limits, and upload size limits at a glance
+* **Activity Log** — Full audit trail of all create, publish, delete, and bulk edit actions
+* **Performance Controls** — Configurable batch size, safe mode, and auto-retry
 
 = 💡 Smart Image Naming Tips =
 
-Name your files descriptively for the best results:
-
 * `blue-hoodie.jpg` → **Blue Hoodie** (1 product, 1 image)
-* `blue-hoodie-1.jpg`, `blue-hoodie-2.jpg`, `blue-hoodie-3.jpg` → **Blue Hoodie** (1 product, 3-image gallery)
-* `leather-belt.jpg` → **Leather Belt** (1 product, 1 image)
+* `blue-hoodie-1.jpg`, `blue-hoodie-2.jpg` → **Blue Hoodie** (1 product, 2-image gallery)
 
 Use hyphens (`-`) or underscores (`_`) to separate words. Trailing numbers are stripped automatically.
 
@@ -79,16 +113,8 @@ Use hyphens (`-`) or underscores (`_`) to separate words. Trailing numbers are s
 
 * All products start as **drafts** — nothing goes live until you click Publish
 * Every request is **nonce-protected** and capability-checked (`manage_woocommerce`)
-* All inputs are **sanitized and escaped** — no raw database queries
-* Built on the **WooCommerce CRUD API** for maximum compatibility
-* Products created by DropProduct are **tagged with meta** so they never interfere with your existing products
-
-= 🚀 Built for Speed =
-
-* **SPA-style interface** — No page reloads, everything runs via AJAX
-* **Assets load only on the DropProduct page** — Zero global admin impact
-* **Lightweight codebase** — Clean, well-structured PHP and JavaScript
-* **No external dependencies** — No bloated frameworks or libraries
+* All inputs are **sanitized and escaped**
+* Order Shield uses **rule-based scoring** — no external APIs, no third-party data sharing
 
 == Installation ==
 
@@ -103,59 +129,73 @@ Use hyphens (`-`) or underscores (`_`) to separate words. Trailing numbers are s
 
 Yes. WooCommerce must be installed and active. DropProduct requires WooCommerce 6.0 or higher.
 
-= What image formats are supported? =
+= What fields can I edit in the grid? =
 
-DropProduct supports JPEG (.jpg, .jpeg), PNG (.png), GIF (.gif), and WebP (.webp) image formats.
+You can edit: **Title**, **Short Description**, **Regular Price**, **Sale Price**, **SKU**, **Stock Status**, **Category**, and **Cost Price** (internal — not shown to customers).
 
-= What product types does the free version support? =
+= How does the Order Shield fraud protection work? =
 
-The free version creates WooCommerce **Simple Products**. Variable product support with automatic attribute detection is available in [DropProduct Pro](https://dropproduct.dev/pro).
+Order Shield uses a rule-based scoring engine to assess risk at checkout. Each suspicious signal (disposable email, IP velocity, country mismatch, failed payments, checkout speed) adds risk points. If the total exceeds your "Block" threshold, the order is rejected; if it exceeds your "Review" threshold, the order is set to "On Hold". No external APIs are used.
 
-= How does the smart image grouping work? =
+= Where is the Cost Price stored? =
 
-If you upload files with the same base name but different trailing numbers — like `shoe-1.jpg`, `shoe-2.jpg`, `shoe-3.jpg` — they are grouped into a **single product** called "Shoe". The first image becomes the featured image, and the rest become gallery images.
-
-= Will this plugin slow down my admin? =
-
-No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin page**. It adds zero overhead to the rest of your WordPress admin.
-
-= Is it safe to use on a live store? =
-
-Absolutely. All products are created as **drafts** first. Nothing is published until you click "Publish All" and validation passes. Products created by DropProduct are tagged separately and never interfere with your existing products.
-
-= Can I upload hundreds of images at once? =
-
-Yes, but your server's `upload_max_filesize`, `post_max_size`, and `max_file_uploads` PHP settings determine the upper limit. For best reliability, upload in batches of 10–20 images. [DropProduct Pro](https://dropproduct.dev/pro) adds configurable batch size and auto-retry for large uploads.
+Cost prices are stored in `wp_postmeta` under the key `_dropproduct_cost_price`. They are private and never shown to customers.
 
 = Does DropProduct work with WooCommerce HPOS? =
 
 Yes. DropProduct is fully compatible with WooCommerce High-Performance Order Storage (HPOS).
 
-= What fields can I edit in the grid? =
+= Will this plugin slow down my admin? =
 
-You can edit: **Title**, **Short Description**, **Regular Price**, **Sale Price**, **SKU**, **Stock Status** (In stock / Out of stock / On backorder), and **Category**. Pro adds SEO fields (URL slug, meta description, image ALT text).
-
-= Can I undo changes? =
-
-Changes are saved to the database immediately as you edit. There is no undo button. However, since products start as drafts, you can delete any product before publishing. [DropProduct Pro](https://dropproduct.dev/pro) adds session rollback to delete entire upload batches at once.
-
+No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin page**.
 
 == Changelog ==
+
+= 1.0.2 =
+**New Features**
+
+* **Cost-to-Profit Tracker** — New "Cost Price" grid column. Profit and Margin % calculated in real-time on the client side; cost auto-saved via debounced AJAX to `_dropproduct_cost_price` post meta. Colour-coded display: green (profitable), red (loss), grey (no data).
+* **Ultimate Order Shield** — Complete WooCommerce fraud protection. Rule-based risk scoring (disposable emails +40, IP velocity +30, repeated data +25, country mismatch +20, failed payments +25, checkout speed +20). Honeypot + blacklist instant-block pre-checks. Configurable block/review thresholds, COD restriction, full activity log. New admin submenu: DropProduct → 🛡️ Order Shield. Custom DB table `{prefix}dropproduct_fraud_log`.
+
+**Improvements**
+
+* Price Slasher bar redesigned from dark indigo theme to a clean **light theme** — white background, indigo left-border accent, full-contrast inputs and labels.
+* `handle_bulk_price_adjust()` AJAX response refactored: returns flat `{id, regular_price, sale_price}` per product instead of nested `fields[]` array — eliminates the "price disappears after apply" bug.
+* Profit and Margin auto-recalculate whenever Regular Price or Sale Price is edited in the grid.
+
+**Bug Fixes**
+
+* Regular price inputs no longer lose their values after a Price Slasher bulk adjustment is applied.
+
+= 1.0.1 =
+**New Features**
+
+* **Quick Bulk Price Adjuster (Price Slasher)** — Select products, open the Price Slasher bar via toolbar toggle, apply % or fixed price adjustments to Regular, Sale, or both prices simultaneously.
+* **Smart SEO Alt-Text Automator** — Auto-generates Title Case alt text from filenames on upload. Toggle in Settings. Only sets alt when the field is currently empty.
+* **Individual Publish** — Per-row publish button for publishing a single draft without affecting others.
+* **Custom Delete Modal** — Replaced browser `confirm()` with a styled modal popup for delete confirmations.
+
+**Improvements**
+
+* Added Pro feature lock popup — clicking locked features shows a modal with an upgrade link instead of doing nothing.
 
 = 1.0.0 =
 * Initial release
 * Drag & drop multi-image upload with real-time progress bar
 * Smart filename-to-title conversion with automatic gallery grouping
-* SPA-style inline editable product grid (title, description, regular price, sale price, SKU, stock, category)
+* SPA-style inline editable product grid
 * Auto-save on blur/change with visual saving/saved/error states
 * Sale price validation with tooltip warning
-* Hover image preview with cursor tracking
-* Batch publish with client-side and server-side validation
-* Description editor popup with save indicator
-* HPOS compatibility declared
-* Extension hooks for Pro integration
+* Hover image preview, description popup, batch publish with validation
+* HPOS compatibility declared; extension hooks for Pro integration
 
 == Upgrade Notice ==
 
+= 1.0.2 =
+Major release: Cost-to-Profit Tracker adds financial insight to every product row. Ultimate Order Shield adds complete WooCommerce fraud protection. Price Slasher UI redesigned for readability. Update recommended.
+
+= 1.0.1 =
+Adds Price Slasher, SEO Alt-Text Automator, individual publish button, and improved delete modal. Update recommended.
+
 = 1.0.0 =
-Initial release of DropProduct – the fastest way to bulk create WooCommerce products from images. Drag, drop, edit, publish.
+Initial release of DropProduct.
