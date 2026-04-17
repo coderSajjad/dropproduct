@@ -107,35 +107,60 @@ $is_pro = defined( 'DROPPRODUCT_PRO_VERSION' );
 	<?php
 	/**
 	 * Fires before the product grid table.
-	 * Used by Pro to inject session filter dropdown.
+	 * Used by Pro to inject advanced session filters.
 	 *
 	 * @since 1.1.0
 	 */
 	do_action( 'dropproduct_before_grid' );
-
-	// Show locked session bar when Pro is not active.
-	if ( ! $is_pro ) :
 	?>
-	<div class="dropproduct-pro-session-bar dropproduct-session-bar-free">
-		<div class="dropproduct-pro-session-bar__left">
-			<span class="dashicons dashicons-backup" style="color:var(--wu-primary);"></span>
-			<label class="dropproduct-locked-label">
+
+	<!-- ── Session & Activity Bar (Free — fully functional since v1.0.3) ── -->
+	<div class="dropproduct-session-bar" id="dropproduct-session-bar">
+		<div class="dropproduct-session-bar__left">
+			<span class="dashicons dashicons-backup" style="color:var(--wu-primary);vertical-align:middle;"></span>
+			<label class="dropproduct-session-label" for="dropproduct-session-select">
 				<?php esc_html_e( 'Session:', 'dropproduct' ); ?>
-				<span class="dropproduct-locked-select dropproduct-pro-lock-trigger" tabindex="0">
-					<?php esc_html_e( 'All Sessions', 'dropproduct' ); ?>
-					<span class="dashicons dashicons-lock"></span>
-				</span>
 			</label>
+			<select id="dropproduct-session-select" class="dropproduct-session-select">
+				<option value=""><?php esc_html_e( '— All Sessions —', 'dropproduct' ); ?></option>
+			</select>
 		</div>
-		<div class="dropproduct-pro-session-bar__right">
-			<button type="button" class="button button-small dropproduct-pro-lock-trigger">
-				<span class="dashicons dashicons-list-view"></span>
+		<div class="dropproduct-session-bar__right">
+			<button type="button" class="button button-small" id="dropproduct-activity-log-btn">
+				<span class="dashicons dashicons-list-view" style="vertical-align:middle;margin-top:2px;"></span>
 				<?php esc_html_e( 'Activity Log', 'dropproduct' ); ?>
-				<span class="dashicons dashicons-lock" style="font-size:12px;width:12px;height:12px;"></span>
 			</button>
 		</div>
 	</div>
-	<?php endif; ?>
+
+	<!-- ── Activity Log Panel (hidden by default) ──────────────────────── -->
+	<div id="dropproduct-activity-log-panel" class="dropproduct-activity-log-panel" style="display:none;">
+		<div class="dpal-header">
+			<div class="dpal-header__left">
+				<strong><?php esc_html_e( 'Activity Log', 'dropproduct' ); ?></strong>
+				<select id="dpal-filter" class="dpal-filter">
+					<option value=""><?php esc_html_e( 'All Actions', 'dropproduct' ); ?></option>
+					<option value="upload"><?php esc_html_e( 'Upload', 'dropproduct' ); ?></option>
+					<option value="publish"><?php esc_html_e( 'Publish', 'dropproduct' ); ?></option>
+					<option value="delete"><?php esc_html_e( 'Delete', 'dropproduct' ); ?></option>
+				</select>
+			</div>
+			<div class="dpal-header__right">
+				<button type="button" class="button button-small dpal-clear-btn" id="dpal-clear-btn">
+					<?php esc_html_e( 'Clear All', 'dropproduct' ); ?>
+				</button>
+				<button type="button" class="dpal-close" id="dpal-close-btn" aria-label="<?php esc_attr_e( 'Close', 'dropproduct' ); ?>">✕</button>
+			</div>
+		</div>
+		<div id="dpal-body" class="dpal-body">
+			<div class="dpal-loading"><?php esc_html_e( 'Loading…', 'dropproduct' ); ?></div>
+		</div>
+		<div class="dpal-footer" id="dpal-footer" style="display:none;">
+			<button type="button" class="button button-small" id="dpal-prev-btn">← <?php esc_html_e( 'Prev', 'dropproduct' ); ?></button>
+			<span id="dpal-page-info"></span>
+			<button type="button" class="button button-small" id="dpal-next-btn"><?php esc_html_e( 'Next', 'dropproduct' ); ?> →</button>
+		</div>
+	</div>
 
 	<!-- Slasher Toolbar: always visible toggle button -->
 	<div class="dropproduct-slasher-toolbar" id="dropproduct-slasher-toolbar">

@@ -1491,34 +1491,201 @@ select.dropproduct-editable {
 	height: 14px;
 }
 
-.dropproduct-pro-session-bar {
-	display: flex;
-	align-items: center;
+/* ═══════════════════════════════════════════════════════
+   SESSION BAR (free — fully functional since v1.0.3)
+   ═══════════════════════════════════════════════════════ */
+
+.dropproduct-session-bar {
+	display:         flex;
+	align-items:     center;
 	justify-content: space-between;
-	flex-wrap: wrap;
-	gap: 10px;
-	margin-bottom: 12px;
+	flex-wrap:       wrap;
+	gap:             10px;
+	margin-bottom:   10px;
+	padding:         8px 14px;
+	background:      #fff;
+	border:          1px solid #e5e7eb;
+	border-radius:   8px;
 }
 
-.dropproduct-pro-session-bar__left {
-	display: flex;
+.dropproduct-session-bar__left {
+	display:     flex;
 	align-items: center;
-	gap: 8px;
-	font-size: 13px;
-	color: var(--wu-gray-600);
+	gap:         8px;
+	font-size:   13px;
 	font-weight: 500;
+	color:       #374151;
 }
 
-.dropproduct-pro-session-bar__right {
+.dropproduct-session-bar__right {
 	display: flex;
-	gap: 6px;
+	gap:     6px;
 }
 
-.dropproduct-pro-toggle-log .dashicons {
-	font-size: 14px;
-	width: 14px;
-	height: 14px;
-	vertical-align: text-bottom;
+.dropproduct-session-label {
+	font-size:   13px;
+	font-weight: 600;
+	color:       #6b7280;
+}
+
+.dropproduct-session-select {
+	min-width:   180px;
+	font-size:   13px !important;
+	padding:     4px 8px !important;
+	border:      1px solid #d1d5db !important;
+	border-radius: 6px !important;
+	color:       #111827;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ACTIVITY LOG PANEL
+   ═══════════════════════════════════════════════════════ */
+
+.dropproduct-activity-log-panel {
+	background:    #fff;
+	border:        1px solid #e5e7eb;
+	border-radius: 10px;
+	margin-bottom: 14px;
+	overflow:      hidden;
+	box-shadow:    0 2px 12px rgba(0,0,0,.06);
+}
+
+.dpal-header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         12px 18px;
+	background:      #f9fafb;
+	border-bottom:   1px solid #e5e7eb;
+	gap:             10px;
+	flex-wrap:       wrap;
+}
+
+.dpal-header__left {
+	display:     flex;
+	align-items: center;
+	gap:         10px;
+	font-size:   14px;
+	font-weight: 700;
+	color:       #111827;
+}
+
+.dpal-header__right {
+	display:     flex;
+	align-items: center;
+	gap:         8px;
+}
+
+.dpal-filter {
+	font-size:    12px !important;
+	padding:      3px 8px !important;
+	border:       1px solid #d1d5db !important;
+	border-radius:6px !important;
+}
+
+.dpal-close {
+	background:  transparent;
+	border:      none;
+	cursor:      pointer;
+	font-size:   16px;
+	line-height: 1;
+	color:       #9ca3af;
+	padding:     2px 6px;
+	border-radius: 4px;
+	transition:  all .15s;
+}
+.dpal-close:hover { background: #fee2e2; color: #dc2626; }
+
+.dpal-body {
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+.dpal-loading {
+	text-align: center;
+	padding:    24px;
+	color:      #9ca3af;
+	font-size:  13px;
+}
+
+.dpal-empty {
+	text-align: center;
+	padding:    32px 20px;
+	color:      #9ca3af;
+	font-size:  13px;
+}
+
+/* Activity log table */
+.dpal-table {
+	width:           100%;
+	border-collapse: collapse;
+	font-size:       12px;
+}
+
+.dpal-table th {
+	text-align:     left;
+	padding:        8px 14px;
+	font-size:      10px;
+	font-weight:    700;
+	color:          #9ca3af;
+	text-transform: uppercase;
+	letter-spacing: .5px;
+	border-bottom:  1px solid #f3f4f6;
+	background:     #fafafa;
+	position:       sticky;
+	top:            0;
+	z-index:        1;
+}
+
+.dpal-table td {
+	padding:       8px 14px;
+	border-bottom: 1px solid #f9fafb;
+	color:         #374151;
+	vertical-align:middle;
+}
+
+.dpal-table tr:last-child td { border-bottom: none; }
+.dpal-table tr:hover td      { background: #f9fafb; }
+
+/* Action badges */
+.dpal-badge {
+	display:      inline-block;
+	padding:      2px 8px;
+	border-radius:20px;
+	font-size:    10px;
+	font-weight:  700;
+	letter-spacing:.3px;
+	text-transform:uppercase;
+}
+
+.dpal-badge--upload  { background:#dbeafe; color:#1d4ed8; }
+.dpal-badge--publish { background:#d1fae5; color:#059669; }
+.dpal-badge--delete  { background:#fee2e2; color:#dc2626; }
+.dpal-badge--edit    { background:#fef3c7; color:#d97706; }
+
+.dpal-del-btn {
+	background: transparent;
+	border:     none;
+	cursor:     pointer;
+	color:      #d1d5db;
+	padding:    2px 5px;
+	border-radius: 4px;
+	line-height:1;
+	font-size:  15px;
+	transition: color .15s;
+}
+.dpal-del-btn:hover { color: #dc2626; }
+
+.dpal-footer {
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	gap:             12px;
+	padding:         10px 18px;
+	border-top:      1px solid #f3f4f6;
+	background:      #fafafa;
+	font-size:       12px;
+	color:           #6b7280;
 }
 
 /* ═══════════════════════════════════════════════════════

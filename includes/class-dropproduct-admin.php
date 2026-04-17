@@ -44,6 +44,13 @@ class DropProduct_Admin
     private $fraud_shield_hook_suffix = '';
 
     /**
+     * Hook suffix for the Dashboard page.
+     *
+     * @var string
+     */
+    private $dashboard_hook_suffix = '';
+
+    /**
      * Register a top-level admin menu page and a Settings sub-menu.
      *
      * @since 1.0.0
@@ -88,6 +95,16 @@ class DropProduct_Admin
             'manage_woocommerce',
             'dropproduct-fraud-shield',
             array($this, 'render_fraud_shield_page')
+        );
+
+        // Dashboard sub-menu.
+        $this->dashboard_hook_suffix = add_submenu_page(
+            'dropproduct',
+            __('DropProduct Dashboard', 'dropproduct'),
+            '📊 ' . __('Dashboard', 'dropproduct'),
+            'manage_woocommerce',
+            'dropproduct-dashboard',
+            array($this, 'render_dashboard_page')
         );
     }
 
@@ -171,6 +188,49 @@ class DropProduct_Admin
                 'confirmDelete' => __('Delete this log entry?', 'dropproduct'),
                 'confirmClear'  => __('Clear ALL log entries? This cannot be undone.', 'dropproduct'),
                 'logsCleared'   => __('All logs cleared.', 'dropproduct'),
+            ));
+
+            return;
+        }
+
+        // Dashboard page assets.
+        if ($hook_suffix === $this->dashboard_hook_suffix) {
+            wp_enqueue_style(
+                'dropproduct-dashboard',
+                DROPPRODUCT_PLUGIN_URL . 'assets/css/admin-dashboard.css',
+                array(),
+                DROPPRODUCT_VERSION
+            );
+
+            wp_enqueue_script(
+                'dropproduct-dashboard',
+                DROPPRODUCT_PLUGIN_URL . 'assets/js/admin-dashboard.js',
+                array('jquery'),
+                DROPPRODUCT_VERSION,
+                true
+            );
+
+            wp_localize_script('dropproduct-dashboard', 'dpDashboard', array(
+                'ajaxUrl'         => admin_url('admin-ajax.php'),
+                'nonce'           => wp_create_nonce('dropproduct_dashboard'),
+                'currency_symbol' => get_woocommerce_currency_symbol(),
+                'strings'         => array(
+                    'updated_at'  => __('Updated at', 'dropproduct'),
+                    'blocked'     => __('Blocked', 'dropproduct'),
+                    'on_hold'     => __('On Hold', 'dropproduct'),
+                    'allowed'     => __('Allowed', 'dropproduct'),
+                    'no_threats'  => __('No recent threats — looking good!', 'dropproduct'),
+                    'no_orders'   => __('No pending or processing orders right now.', 'dropproduct'),
+                    'customer'    => __('Customer', 'dropproduct'),
+                    'status'      => __('Status', 'dropproduct'),
+                    'total'       => __('Total', 'dropproduct'),
+                    'waiting'     => __('Waiting', 'dropproduct'),
+                    'all_good'    => __('All clear — no alerts here!', 'dropproduct'),
+                    'left'        => __('left', 'dropproduct'),
+                    'out_of_stock'=> __('Out of Stock', 'dropproduct'),
+                    'incomplete'  => __('Incomplete', 'dropproduct'),
+                    'load_error'  => __('Failed to load data. Try refreshing.', 'dropproduct'),
+                ),
             ));
 
             return;
@@ -276,6 +336,20 @@ class DropProduct_Admin
         include DROPPRODUCT_PLUGIN_DIR . 'admin/views/fraud-shield-page.php';
     }
 
+    /**
+     * Render the Dashboard admin page.
+     *
+     * @since 1.0.3
+     */
+    public function render_dashboard_page()
+    {
+        if (! current_user_can('manage_woocommerce')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'dropproduct'));
+        }
+
+        include DROPPRODUCT_PLUGIN_DIR . 'admin/views/dashboard-page.php';
+    }
+
     // ──────────────────────────────────────────
     //  Utility
     // ──────────────────────────────────────────
@@ -292,6 +366,7 @@ class DropProduct_Admin
             $this->hook_suffix,
             $this->settings_hook_suffix,
             $this->fraud_shield_hook_suffix,
+            $this->dashboard_hook_suffix,
         ), true);
     }
 }

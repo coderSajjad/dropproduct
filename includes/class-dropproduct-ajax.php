@@ -178,6 +178,17 @@ class DropProduct_Ajax
             wp_send_json_error(array('message' => $result->get_error_message()));
         }
 
+        // Log publish event.
+        if ( class_exists( 'DropProduct_Activity_Logger' ) ) {
+            $session_id = (string) get_post_meta( $product_id, '_dropproduct_session_id', true );
+            DropProduct_Activity_Logger::log(
+                DropProduct_Activity_Logger::ACTION_PUBLISH,
+                $product_id,
+                get_the_title( $product_id ),
+                $session_id
+            );
+        }
+
         wp_send_json_success(array(
             'message'    => __('Product published.', 'dropproduct'),
             'product_id' => $product_id,
@@ -319,6 +330,19 @@ class DropProduct_Ajax
             }
         }
 
+        // Log all successfully published products.
+        if ( class_exists( 'DropProduct_Activity_Logger' ) ) {
+            foreach ( $published as $pid ) {
+                $session_id = (string) get_post_meta( $pid, '_dropproduct_session_id', true );
+                DropProduct_Activity_Logger::log(
+                    DropProduct_Activity_Logger::ACTION_PUBLISH,
+                    $pid,
+                    get_the_title( $pid ),
+                    $session_id
+                );
+            }
+        }
+
         wp_send_json_success(array(
             'published' => $published,
             'failed'    => $failed,
@@ -339,6 +363,18 @@ class DropProduct_Ajax
             wp_send_json_error(array('message' => __('Invalid product ID.', 'dropproduct')));
         }
 
+        // Log delete event.
+        if ( class_exists( 'DropProduct_Activity_Logger' ) ) {
+            $session_id = (string) get_post_meta( $product_id, '_dropproduct_session_id', true );
+            $title      = get_the_title( $product_id );
+            DropProduct_Activity_Logger::log(
+                DropProduct_Activity_Logger::ACTION_DELETE,
+                $product_id,
+                $title,
+                $session_id
+            );
+        }
+
         $result = $this->product_service->delete_product($product_id);
 
         if (is_wp_error($result)) {
@@ -355,7 +391,11 @@ class DropProduct_Ajax
     {
         $this->verify_request();
 
-        $products = $this->product_service->get_draft_products();
+        // Optional session filter from the session bar dropdown.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request().
+        $session_id = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : '';
+
+        $products = $this->product_service->get_draft_products( $session_id );
 
         wp_send_json_success(array('products' => $products));
     }

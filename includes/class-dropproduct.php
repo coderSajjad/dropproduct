@@ -38,6 +38,8 @@ class DropProduct
         $this->define_admin_hooks();
         $this->define_ajax_hooks();
         $this->define_fraud_shield_hooks();
+        $this->define_dashboard_hooks();
+        $this->define_activity_hooks();
     }
 
     /**
@@ -55,6 +57,9 @@ class DropProduct
         require_once $dir . 'class-dropproduct-settings.php';
         require_once $dir . 'class-dropproduct-fraud-logger.php';
         require_once $dir . 'class-dropproduct-fraud-shield.php';
+        require_once $dir . 'class-dropproduct-dashboard-data.php';
+        require_once $dir . 'class-dropproduct-dashboard.php';
+        require_once $dir . 'class-dropproduct-activity-logger.php';
 
         $this->loader = new DropProduct_Loader();
     }
@@ -117,6 +122,87 @@ class DropProduct
 
         // Register front-end WC hooks (only when WC is active).
         add_action('woocommerce_loaded', array($fraud_shield, 'register_hooks'));
+    }
+
+    /**
+     * Register Dashboard AJAX endpoints.
+     *
+     * @since 1.0.3
+     */
+    private function define_dashboard_hooks()
+    {
+        $dashboard = new DropProduct_Dashboard();
+
+        $this->loader->add_action('wp_ajax_dropproduct_dashboard_financials',  $dashboard, 'handle_financials');
+        $this->loader->add_action('wp_ajax_dropproduct_dashboard_security',    $dashboard, 'handle_security');
+        $this->loader->add_action('wp_ajax_dropproduct_dashboard_orders',      $dashboard, 'handle_orders');
+        $this->loader->add_action('wp_ajax_dropproduct_dashboard_inventory',   $dashboard, 'handle_inventory');
+        $this->loader->add_action('wp_ajax_dropproduct_dashboard_readiness',   $dashboard, 'handle_readiness');
+        $this->loader->add_action('wp_ajax_dropproduct_dashboard_flush_cache', $dashboard, 'handle_flush_cache');
+    }
+
+    /**
+     * Bootstrap the Activity Logger — create the DB table and register
+     * all session/activity AJAX endpoints.
+     *
+     * @since 1.0.3
+     */
+    private function define_activity_hooks()
+    {
+        // Ensure table exists (idempotent via dbDelta).
+        DropProduct_Activity_Logger::create_table();
+
+        // Expose the logger globally so AJAX handlers can call it via $GLOBALS.
+        $GLOBALS['dropproduct_activity_logger'] = new DropProduct_Activity_Logger();
+
+        // AJAX: get sessions list for the dropdown.
+        $this->loader->add_action( 'wp_ajax_dropproduct_get_sessions',      $this, 'ajax_get_sessions' );
+        // AJAX: get activity log entries.
+        $this->loader->add_action( 'wp_ajax_dropproduct_get_activity_log',  $this, 'ajax_get_activity_log' );
+        // AJAX: delete a single activity log entry.
+        $this->loader->add_action( 'wp_ajax_dropproduct_delete_activity',   $this, 'ajax_delete_activity' );
+        // AJAX: clear all activity log entries.
+        $this->loader->add_action( 'wp_ajax_dropproduct_clear_activity',    $this, 'ajax_clear_activity' );
+    }
+
+    /* ── Activity AJAX handlers (thin wrappers) ───────── */
+
+    private function verify_ajax() {
+        check_ajax_referer( 'dropproduct_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dropproduct' ) ), 403 );
+        }
+    }
+
+    public function ajax_get_sessions() {
+        $this->verify_ajax();
+        wp_send_json_success( DropProduct_Activity_Logger::get_sessions() );
+    }
+
+    public function ajax_get_activity_log() {
+        $this->verify_ajax();
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $filter = isset( $_POST['filter'] ) ? sanitize_key( $_POST['filter'] ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $page   = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 1;
+        $limit  = 20;
+        $offset = ( $page - 1 ) * $limit;
+        wp_send_json_success( DropProduct_Activity_Logger::get_logs( $limit, $offset, $filter ) );
+    }
+
+    public function ajax_delete_activity() {
+        $this->verify_ajax();
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $id = isset( $_POST['log_id'] ) ? absint( $_POST['log_id'] ) : 0;
+        if ( ! $id ) { wp_send_json_error(); }
+        DropProduct_Activity_Logger::delete_entry( $id );
+        wp_send_json_success();
+    }
+
+    public function ajax_clear_activity() {
+        $this->verify_ajax();
+        DropProduct_Activity_Logger::clear_all();
+        wp_send_json_success();
     }
 
     /**

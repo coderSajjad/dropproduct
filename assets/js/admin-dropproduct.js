@@ -21,9 +21,12 @@
 			this.cache();
 			this.cacheModal();
 			this.cacheDeleteModal();
+			this.cacheSessionActivity();
 			this.cacheProPopup();
 			this.cachePriceSlasher();
 			this.bindEvents();
+			this.bindSessionActivityEvents();
+			this.loadSessions();
 			this.loadExistingProducts();
 		},
 
@@ -62,18 +65,40 @@
 		},
 
 		/**
-		 * Cache delete confirmation modal elements.
+		 * Cache confirmation modal elements.
 		 */
 		cacheDeleteModal: function () {
 			this.$confirmOverlay = $('#dropproduct-confirm-overlay');
 			this.$confirmModal = $('#dropproduct-confirm-modal');
 			this.$confirmCancel = $('#dropproduct-confirm-cancel');
 			this.$confirmDelete = $('#dropproduct-confirm-delete');
-			this._deleteRow = null;
+			this.$confirmTitle = this.$confirmModal.find('h3');
+			this.$confirmText = this.$confirmModal.find('p');
+			this._confirmCallback = null;
 		},
 
 		/**
-		 * Cache Pro lock popup elements (free version only).
+		 * Cache elements for session dropdown and activity log panel.
+		 */
+		cacheSessionActivity: function () {
+			this.$sessionSelect = $('#dropproduct-session-select');
+			this.$activityBtn   = $('#dropproduct-activity-log-btn');
+			this.$activityPanel = $('#dropproduct-activity-log-panel');
+			this.$dpalFilter    = $('#dpal-filter');
+			this.$dpalClearBtn  = $('#dpal-clear-btn');
+			this.$dpalCloseBtn  = $('#dpal-close-btn');
+			this.$dpalBody      = $('#dpal-body');
+			this.$dpalFooter    = $('#dpal-footer');
+			this.$dpalPrevBtn   = $('#dpal-prev-btn');
+			this.$dpalNextBtn   = $('#dpal-next-btn');
+			this.$dpalPageInfo  = $('#dpal-page-info');
+
+			this._dpalPage   = 1;
+			this._dpalFilter = '';
+		},
+
+		/**
+		 * Cache Pro lock popup elements (for bulk actions).
 		 */
 		cacheProPopup: function () {
 			this.$proOverlay = $('#dropproduct-pro-overlay');
@@ -188,18 +213,21 @@
 				self.openDeleteModal($row);
 			});
 
-			// Delete modal: confirm.
+			// Confirm modal: confirm.
 			this.$confirmDelete.on('click', function () {
-				self.confirmDelete();
+				if (typeof self._confirmCallback === 'function') {
+					self._confirmCallback();
+				}
+				self.closeConfirmModal();
 			});
 
-			// Delete modal: cancel.
+			// Confirm modal: cancel.
 			this.$confirmCancel.on('click', function () {
-				self.closeDeleteModal();
+				self.closeConfirmModal();
 			});
 
 			this.$confirmOverlay.on('click', function () {
-				self.closeDeleteModal();
+				self.closeConfirmModal();
 			});
 
 			// Publish all.
@@ -259,33 +287,26 @@
 			$(document).on('keydown', function (e) {
 				if (e.key === 'Escape') {
 					self.closeDescriptionModal();
-					self.closeDeleteModal();
+					self.closeConfirmModal();
+					self.$activityPanel.slideUp(300);
 					self.closeProPopup();
 				}
 			});
 
-			// Pro feature lock triggers (shown in free version).
+			// Pro feature lock triggers (used by Bulk Action Bar).
 			$(document).on('click', '.dropproduct-pro-lock-trigger', function (e) {
 				e.preventDefault();
 				e.stopPropagation();
 				self.openProPopup();
 			});
 
-			// Locked session bar clicks.
-			$(document).on('click keydown', '.dropproduct-locked-select', function (e) {
-				if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
-				e.preventDefault();
-				self.openProPopup();
-			});
-
-			// Pro popup close.
-			if (this.$proPopupClose.length) {
+			if (this.$proPopupClose && this.$proPopupClose.length) {
 				this.$proPopupClose.on('click', function () { self.closeProPopup(); });
 			}
-			if (this.$proPopupX.length) {
+			if (this.$proPopupX && this.$proPopupX.length) {
 				this.$proPopupX.on('click', function () { self.closeProPopup(); });
 			}
-			if (this.$proOverlay.length) {
+			if (this.$proOverlay && this.$proOverlay.length) {
 				this.$proOverlay.on('click', function () { self.closeProPopup(); });
 			}
 
@@ -352,13 +373,20 @@
 		 */
 		loadExistingProducts: function () {
 			var self = this;
+			var sessionId = this.$sessionSelect.val() || '';
+
+			this.$gridBody.find('tr[data-product-id]').remove();
 
 			$.post(dropProduct.ajaxUrl, {
 				action: 'dropproduct_load_products',
+				session_id: sessionId,
 				nonce: dropProduct.nonce
 			}, function (response) {
 				if (response.success && response.data.products.length) {
 					self.renderProducts(response.data.products);
+				} else {
+					self.$emptyRow.show();
+					self.updateDraftCount();
 				}
 			});
 		},
@@ -769,16 +797,20 @@
 		},
 
 		// ──────────────────────────────────────────
-		//  Delete Confirmation Modal
+		//  Generic Confirmation Modal
 		// ──────────────────────────────────────────
 
 		/**
-		 * Open the custom delete confirmation modal.
+		 * Open the custom confirmation modal.
 		 *
-		 * @param {jQuery} $row Table row element.
+		 * @param {string}   title    Modal title.
+		 * @param {string}   text     Modal text.
+		 * @param {function} callback Function to call on confirm.
 		 */
-		openDeleteModal: function ($row) {
-			this._deleteRow = $row;
+		openConfirmModal: function (title, text, callback) {
+			this.$confirmTitle.text(title);
+			this.$confirmText.text(text);
+			this._confirmCallback = callback;
 			this.$confirmOverlay.addClass('is-open');
 			this.$confirmModal.addClass('is-open');
 		},
@@ -786,21 +818,26 @@
 		/**
 		 * Close the delete confirmation modal.
 		 */
-		closeDeleteModal: function () {
+		closeConfirmModal: function () {
 			this.$confirmOverlay.removeClass('is-open');
 			this.$confirmModal.removeClass('is-open');
-			this._deleteRow = null;
+			this._confirmCallback = null;
 		},
 
 		/**
-		 * Execute the delete after user confirms.
+		 * Backwards compatibility to open delete product modal.
+		 *
+		 * @param {jQuery} $row Table row element.
 		 */
-		confirmDelete: function () {
-			var $row = this._deleteRow;
-			this.closeDeleteModal();
-			if ($row) {
-				this.deleteProduct($row);
-			}
+		openDeleteModal: function ($row) {
+			var self = this;
+			this.openConfirmModal(
+				dropProduct.i18n && dropProduct.i18n.deleteProductTitle ? dropProduct.i18n.deleteProductTitle : 'Delete Product?',
+				dropProduct.i18n && dropProduct.i18n.deleteProductText ? dropProduct.i18n.deleteProductText : 'This will permanently delete the product and its images. This action cannot be undone.',
+				function () {
+					self.deleteProduct($row);
+				}
+			);
 		},
 
 		/**
@@ -1022,25 +1059,168 @@
 		},
 
 		// ──────────────────────────────────────────
-		//  Pro Feature Lock Popup
+		//  Session Filter & Activity Log Panel
 		// ──────────────────────────────────────────
 
-		/**
-		 * Open the Pro feature lock popup.
-		 */
-		openProPopup: function () {
-			if (!this.$proPopup.length) return;
-			this.$proOverlay.addClass('is-open');
-			this.$proPopup.addClass('is-open');
+		bindSessionActivityEvents: function () {
+			var self = this;
+
+			// Filter products on session select change
+			this.$sessionSelect.on('change', function () {
+				self.loadExistingProducts();
+			});
+
+			// Toggle Activity Log panel
+			this.$activityBtn.on('click', function () {
+				self.$activityPanel.slideToggle(300, function() {
+					if (self.$activityPanel.is(':visible')) {
+						self.loadActivityLog();
+					}
+				});
+			});
+
+			// Close Activity Log
+			this.$dpalCloseBtn.on('click', function () {
+				self.$activityPanel.slideUp(300);
+			});
+
+			// Filter Activity Log dropdown
+			this.$dpalFilter.on('change', function () {
+				self._dpalFilter = $(this).val();
+				self._dpalPage   = 1;
+				self.loadActivityLog();
+			});
+
+			// Pagination
+			this.$dpalPrevBtn.on('click', function () {
+				if (self._dpalPage > 1) {
+					self._dpalPage--;
+					self.loadActivityLog();
+				}
+			});
+			this.$dpalNextBtn.on('click', function () {
+				self._dpalPage++;
+				self.loadActivityLog();
+			});
+
+			// Clear all activity
+			this.$dpalClearBtn.on('click', function () {
+				self.openConfirmModal(
+					'Clear Activity Log?',
+					'This will permanently delete ALL activity logs. This action cannot be undone.',
+					function () { self.clearActivityLog(); }
+				);
+			});
+
+			// Delete single activity row
+			this.$dpalBody.on('click', '.dpal-del-btn', function () {
+				var id = $(this).data('id');
+				self.openConfirmModal(
+					'Delete Log Entry?',
+					'This will delete this specific log entry permanently.',
+					function () { self.deleteActivityLogEntry(id); }
+				);
+			});
 		},
 
-		/**
-		 * Close the Pro feature lock popup.
-		 */
-		closeProPopup: function () {
-			if (!this.$proPopup.length) return;
-			this.$proOverlay.removeClass('is-open');
-			this.$proPopup.removeClass('is-open');
+		loadSessions: function () {
+			var self = this;
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_get_sessions',
+				nonce: dropProduct.nonce
+			}, function (response) {
+				if (response.success && response.data.length) {
+					var opts = '<option value="">— All Sessions —</option>';
+					$.each(response.data, function (i, session) {
+						opts += '<option value="' + self.escAttr(session) + '">' + self.escHtml(session) + '</option>';
+					});
+					self.$sessionSelect.html(opts);
+				}
+			});
+		},
+
+		loadActivityLog: function () {
+			var self = this;
+			self.$dpalBody.html('<div class="dpal-loading">Loading…</div>');
+			self.$dpalFooter.hide();
+
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_get_activity_log',
+				nonce:  dropProduct.nonce,
+				filter: self._dpalFilter,
+				page:   self._dpalPage
+			}, function (response) {
+				if (!response.success || !response.data) {
+					self.$dpalBody.html('<div class="dpal-empty">Failed to load log.</div>');
+					return;
+				}
+
+				var rows    = response.data.rows;
+				var total   = response.data.total;
+				var perPage = 20;
+
+				if (!rows || !rows.length) {
+					self.$dpalBody.html('<div class="dpal-empty">No activity found.</div>');
+					return;
+				}
+
+				var html = '<table class="dpal-table"><thead><tr>' +
+					'<th>Action</th><th>Product</th><th>Session</th><th>Date</th><th></th>' +
+					'</tr></thead><tbody>';
+
+				$.each(rows, function (i, item) {
+					html += '<tr>' +
+						'<td><span class="dpal-badge dpal-badge--' + self.escAttr(item.action_type) + '">' + self.escHtml(item.action_type) + '</span></td>' +
+						'<td>' + self.escHtml(item.product_name || ('ID: ' + item.product_id)) + '</td>' +
+						'<td>' + self.escHtml(item.session_id) + '</td>' +
+						'<td>' + self.escHtml(item.created_at) + '</td>' +
+						'<td style="text-align:right;"><button type="button" class="dpal-del-btn" data-id="' + item.id + '" title="Delete entry">&times;</button></td>' +
+						'</tr>';
+				});
+
+				html += '</tbody></table>';
+				self.$dpalBody.html(html);
+
+				if (total > perPage) {
+					self.$dpalFooter.show();
+					self.$dpalPageInfo.text('Page ' + self._dpalPage + ' of ' + Math.ceil(total / perPage));
+					self.$dpalPrevBtn.prop('disabled', self._dpalPage <= 1);
+					self.$dpalNextBtn.prop('disabled', self._dpalPage * perPage >= total);
+				}
+			}).fail(function(){
+				self.$dpalBody.html('<div class="dpal-empty">Network error.</div>');
+			});
+		},
+
+		clearActivityLog: function () {
+			var self = this;
+			var $btn = this.$dpalClearBtn;
+			$btn.prop('disabled', true).text('Clearing…');
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_clear_activity',
+				nonce: dropProduct.nonce
+			}, function (response) {
+				$btn.prop('disabled', false).text('Clear All');
+				if (response.success) {
+					self._dpalPage = 1;
+					self.loadActivityLog();
+				}
+			}).fail(function(){
+				$btn.prop('disabled', false).text('Clear All');
+			});
+		},
+
+		deleteActivityLogEntry: function (id) {
+			var self = this;
+			$.post(dropProduct.ajaxUrl, {
+				action: 'dropproduct_delete_activity',
+				nonce: dropProduct.nonce,
+				log_id: id
+			}, function (response) {
+				if (response.success) {
+					self.loadActivityLog();
+				}
+			});
 		},
 
 		// ──────────────────────────────────────────
@@ -1169,6 +1349,24 @@
 				self.$descSaveBtn.prop('disabled', false).text('Save');
 				self.showNotice(dropProduct.i18n.networkError, 'error');
 			});
+		},
+
+		/**
+		 * Open the Pro feature lock popup.
+		 */
+		openProPopup: function () {
+			if (!this.$proPopup || !this.$proPopup.length) return;
+			this.$proOverlay.addClass('is-open');
+			this.$proPopup.addClass('is-open');
+		},
+
+		/**
+		 * Close the Pro feature lock popup.
+		 */
+		closeProPopup: function () {
+			if (!this.$proPopup || !this.$proPopup.length) return;
+			this.$proOverlay.removeClass('is-open');
+			this.$proPopup.removeClass('is-open');
 		},
 
 		// ──────────────────────────────────────────

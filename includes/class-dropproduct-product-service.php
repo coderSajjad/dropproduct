@@ -50,7 +50,11 @@ class DropProduct_Product_Service
         }
 
         // Mark as created by DropProduct for easy retrieval.
-        $product->add_meta_data(self::META_KEY, '1', true);
+        $product->add_meta_data( self::META_KEY, '1', true );
+
+        // Tag with upload session ID (date + hour:minute for grouping in the session filter).
+        $session_id = current_time( 'Y-m-d H:i' );
+        $product->add_meta_data( '_dropproduct_session_id', $session_id, true );
 
         /**
          * Fires before a draft product is saved.
@@ -64,6 +68,17 @@ class DropProduct_Product_Service
 
         if (! $product_id) {
             return new WP_Error('create_failed', __('Failed to create product.', 'dropproduct'));
+        }
+
+        // Log the creation event.
+        if ( class_exists( 'DropProduct_Activity_Logger' ) ) {
+            DropProduct_Activity_Logger::log(
+                DropProduct_Activity_Logger::ACTION_UPLOAD,
+                $product_id,
+                $product->get_name(),
+                $session_id,
+                ''
+            );
         }
 
         /**
@@ -222,24 +237,35 @@ class DropProduct_Product_Service
     }
 
     /**
-     * Retrieve all draft products created by DropProduct.
+     * Retrieve draft/published products created by DropProduct.
      *
+     * @param string $session_id Optional session ID to filter by. Empty = all.
      * @return array Array of product data arrays.
      */
-    public function get_draft_products()
+    public function get_draft_products( $session_id = '' )
     {
+        // phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+        $meta_query = array(
+            array(
+                'key'   => self::META_KEY,
+                'value' => '1',
+            ),
+        );
+
+        if ( $session_id ) {
+            $meta_query[] = array(
+                'key'   => '_dropproduct_session_id',
+                'value' => sanitize_text_field( $session_id ),
+            );
+        }
+        // phpcs:enable
+
         $products = wc_get_products(array(
             'status'     => array( 'draft', 'publish' ),
             'limit'      => -1,
             'orderby'    => 'date',
             'order'      => 'DESC',
-            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required to retrieve only DropProduct-created products.
-            'meta_query' => array(
-                array(
-                    'key'   => self::META_KEY,
-                    'value' => '1',
-                ),
-            ),
+            'meta_query' => $meta_query,
         ));
 
         $result = array();
@@ -282,6 +308,8 @@ class DropProduct_Product_Service
             'product_type'      => $product->get_type(),
             // Cost-to-Profit Tracker fields.
             'cost_price'        => (float) get_post_meta($product->get_id(), '_dropproduct_cost_price', true),
+            // Session tracking.
+            'session_id'        => (string) get_post_meta($product->get_id(), '_dropproduct_session_id', true),
         );
 
         /**
