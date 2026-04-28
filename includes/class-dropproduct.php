@@ -39,6 +39,7 @@ class DropProduct
         $this->define_ajax_hooks();
         $this->define_fraud_shield_hooks();
         $this->define_dashboard_hooks();
+        $this->define_analytics_hooks();
         $this->define_activity_hooks();
     }
 
@@ -60,6 +61,7 @@ class DropProduct
         require_once $dir . 'class-dropproduct-dashboard-data.php';
         require_once $dir . 'class-dropproduct-dashboard.php';
         require_once $dir . 'class-dropproduct-activity-logger.php';
+        require_once $dir . 'class-dropproduct-analytics.php';
 
         $this->loader = new DropProduct_Loader();
     }
@@ -139,6 +141,45 @@ class DropProduct
         $this->loader->add_action('wp_ajax_dropproduct_dashboard_inventory',   $dashboard, 'handle_inventory');
         $this->loader->add_action('wp_ajax_dropproduct_dashboard_readiness',   $dashboard, 'handle_readiness');
         $this->loader->add_action('wp_ajax_dropproduct_dashboard_flush_cache', $dashboard, 'handle_flush_cache');
+    }
+
+    /**
+     * Register Analytics AJAX endpoints.
+     *
+    * @since 1.1.0
+     */
+    private function define_analytics_hooks()
+    {
+        $analytics = new DropProduct_Analytics();
+
+        $this->loader->add_action('wp_ajax_dropproduct_get_analytics', $this, 'ajax_get_analytics');
+    }
+
+    /**
+     * AJAX handler for analytics data.
+     *
+    * @since 1.1.0
+     */
+    public function ajax_get_analytics()
+    {
+        check_ajax_referer('dropproduct_analytics_nonce', 'nonce');
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(array('message' => __('Permission denied.', 'dropproduct')), 403);
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $range = isset($_POST['range']) ? sanitize_key($_POST['range']) : '30_days';
+
+        $date_ranges = DropProduct_Analytics::get_date_ranges();
+        if (!isset($date_ranges[$range])) {
+            $range = '30_days';
+        }
+
+        $dates = $date_ranges[$range];
+        $analytics = new DropProduct_Analytics();
+        $data = $analytics->get_analytics_data($dates['start_date'], $dates['end_date']);
+
+        wp_send_json_success($data);
     }
 
     /**

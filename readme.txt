@@ -4,11 +4,11 @@ Tags: woocommerce, bulk product upload, product creator, drag drop upload, wooco
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Bulk create WooCommerce products from images. Drag & drop, inline editing, one-click publish — now with fraud protection, financial insights, and bulk price tools.
+Bulk create WooCommerce products from images. Drag & drop, inline editing, one-click publish — now with fraud protection, financial insights, bulk price tools, and a modern Sales Analytics dashboard.
 
 == Description ==
 
@@ -49,6 +49,12 @@ Upload 10, 50, or 100+ product images at once. Each image instantly becomes a dr
 * **Draft Counter** — See how many unpublished products you have at a glance
 * **HPOS Compatible** — Fully compatible with WooCommerce High-Performance Order Storage
 * **Zero Bloat** — Assets only load on the DropProduct page; no impact on the rest of your admin
+
+**📊 Sales Analytics Dashboard**
+
+* New dedicated admin submenu under DropProduct with modern analytics cards and charts
+* Track total sales, orders, average order value, conversion rate, sales over time, top products, top countries, and traffic channels
+* Date range filters and CSV export for quick reporting
 
 **💰 Quick Bulk Price Adjuster (Price Slasher)**
 
@@ -151,33 +157,32 @@ No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin pag
 
 == Changelog ==
 
-= 1.0.2 =
+= 1.1.0 =
+Combined release: includes the unreleased 1.0.1 and 1.0.2 feature sets.
+
 **New Features**
 
+* **Sales Analytics Dashboard** — New DropProduct → 📈 Sales Analytics submenu with a Freemius-style dashboard layout, summary cards, responsive charts, top products, top countries, and device/channel breakdowns.
+* **Date Range Filtering** — Quickly switch between 7, 30, 90, and 365-day reporting windows.
+* **CSV Export** — Export the current analytics view for reporting and record keeping.
 * **Cost-to-Profit Tracker** — New "Cost Price" grid column. Profit and Margin % calculated in real-time on the client side; cost auto-saved via debounced AJAX to `_dropproduct_cost_price` post meta. Colour-coded display: green (profitable), red (loss), grey (no data).
 * **Ultimate Order Shield** — Complete WooCommerce fraud protection. Rule-based risk scoring (disposable emails +40, IP velocity +30, repeated data +25, country mismatch +20, failed payments +25, checkout speed +20). Honeypot + blacklist instant-block pre-checks. Configurable block/review thresholds, COD restriction, full activity log. New admin submenu: DropProduct → 🛡️ Order Shield. Custom DB table `{prefix}dropproduct_fraud_log`.
-
-**Improvements**
-
-* Price Slasher bar redesigned from dark indigo theme to a clean **light theme** — white background, indigo left-border accent, full-contrast inputs and labels.
-* `handle_bulk_price_adjust()` AJAX response refactored: returns flat `{id, regular_price, sale_price}` per product instead of nested `fields[]` array — eliminates the "price disappears after apply" bug.
-* Profit and Margin auto-recalculate whenever Regular Price or Sale Price is edited in the grid.
-
-**Bug Fixes**
-
-* Regular price inputs no longer lose their values after a Price Slasher bulk adjustment is applied.
-
-= 1.0.1 =
-**New Features**
-
-* **Quick Bulk Price Adjuster (Price Slasher)** — Select products, open the Price Slasher bar via toolbar toggle, apply % or fixed price adjustments to Regular, Sale, or both prices simultaneously.
+* **Quick Bulk Price Adjuster (Price Slasher)** — New bulk pricing feature for selected products. Open the Price Slasher bar via toolbar toggle and apply % or fixed price adjustments to Regular, Sale, or both prices simultaneously.
 * **Smart SEO Alt-Text Automator** — Auto-generates Title Case alt text from filenames on upload. Toggle in Settings. Only sets alt when the field is currently empty.
 * **Individual Publish** — Per-row publish button for publishing a single draft without affecting others.
 * **Custom Delete Modal** — Replaced browser `confirm()` with a styled modal popup for delete confirmations.
 
 **Improvements**
 
-* Added Pro feature lock popup — clicking locked features shows a modal with an upgrade link instead of doing nothing.
+* Added a dedicated analytics service and AJAX endpoint for loading dashboard data without leaving the admin page.
+* Updated the admin navigation to surface Sales Analytics alongside Upload, Settings, Dashboard, and Order Shield.
+
+**Bug Fixes**
+
+* Price Slasher bar redesigned from dark indigo theme to a clean **light theme** — white background, indigo left-border accent, full-contrast inputs and labels.
+* `handle_bulk_price_adjust()` AJAX response refactored: returns flat `{id, regular_price, sale_price}` per product instead of nested `fields[]` array — eliminates the "price disappears after apply" bug.
+* Profit and Margin auto-recalculate whenever Regular Price or Sale Price is edited in the grid.
+* Regular price inputs no longer lose their values after a Price Slasher bulk adjustment is applied.
 
 = 1.0.0 =
 * Initial release
@@ -191,11 +196,8 @@ No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin pag
 
 == Upgrade Notice ==
 
-= 1.0.2 =
-Major release: Cost-to-Profit Tracker adds financial insight to every product row. Ultimate Order Shield adds complete WooCommerce fraud protection. Price Slasher UI redesigned for readability. Update recommended.
-
-= 1.0.1 =
-Adds Price Slasher, SEO Alt-Text Automator, individual publish button, and improved delete modal. Update recommended.
+= 1.1.0 =
+Major release: Sales Analytics adds a modern reporting dashboard for DropProduct sales performance, including charts, top products, geographic breakdowns, and CSV export, plus the Cost-to-Profit Tracker, Ultimate Order Shield, Price Slasher improvements, SEO Alt-Text Automator, Pro feature lock popup, and publish/delete workflow upgrades.
 
 = 1.0.0 =
 Initial release of DropProduct.

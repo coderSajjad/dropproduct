@@ -81,6 +81,7 @@ When everything looks good, click the **"Publish All"** button. All draft produc
 | 🚀 Batch Publish | Publish all products in one click |
 | ⚠️ Field Highlighting | Missing required fields are highlighted in red |
 | 📦 Simple Products | Creates WooCommerce Simple Products |
+| 📊 Sales Analytics | View revenue, orders, products, countries, and trends in a modern dashboard |
 
 ---
 
@@ -118,3 +119,24 @@ The free version supports **simple products only**. For advanced features, check
 - Performance controls
 - Template presets
 - Activity log
+
+Sales Analytics is included in the free version and gives you a quick view of sales performance directly inside WordPress admin.
+
+---
+
+## Sales Analytics
+
+DropProduct includes a built-in Sales Analytics dashboard (DropProduct → Sales Analytics). It provides quick, actionable metrics for DropProduct-created products: revenue, orders, top products, countries, and time-series trends.
+
+- Requirements: WooCommerce active, orders in the store, and products created by DropProduct (products have the `_dropproduct_product` postmeta set to `1`).
+- How it works: the dashboard loads aggregated data via an AJAX endpoint and renders charts with Chart.js. Charts and CSV export are client-side; data is served by the `DropProduct_Analytics` service in the PHP `includes/` folder.
+- Demo data: a sample SQL file for testing is included at `admin/sql/dropproduct-demo-data.sql`. Import it into your site database (via WP-CLI, phpMyAdmin, or other DB tools) to populate orders/products for the demo dashboard.
+
+Quick test:
+1. Import `admin/sql/dropproduct-demo-data.sql` into your site database.
+2. Visit **DropProduct → Sales Analytics** and choose a date range.
+3. Open your browser DevTools Network tab and confirm `admin-ajax.php?action=dropproduct_get_analytics` returns JSON.
+
+Notes:
+- The analytics dashboard is intentionally lightweight; if you need richer channel/device attribution integrate your tracking system and map UTM/GA data into your WooCommerce orders (or extend the analytics service in `includes/class-dropproduct-analytics.php`).
+- For privacy and performance, analytics respects WordPress capability checks and only exposes data to users with `manage_woocommerce` capability.

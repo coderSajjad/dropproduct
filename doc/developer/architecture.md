@@ -55,7 +55,8 @@ dropproduct/
 │   ├── class-dropproduct-grouping-engine.php    # Image grouping
 │   ├── class-dropproduct-settings.php           # Settings CRUD
 │   ├── class-dropproduct-fraud-shield.php       # Fraud engine (v1.0.2)
-│   └── class-dropproduct-fraud-logger.php       # Fraud log DB table (v1.0.2)
+│   ├── class-dropproduct-fraud-logger.php       # Fraud log DB table (v1.0.2)
+│   └── class-dropproduct-analytics.php          # Sales analytics service (v1.1.0)
 ├── admin/views/
 │   ├── dropproduct-page.php                     # Main admin page template (v1.0.2 — 3 new columns)
 │   ├── settings-page.php                        # Settings page template
@@ -148,6 +149,7 @@ Products created by DropProduct are tagged with `_dropproduct_product` meta key 
 | `DropProduct_Settings` | `class-dropproduct-settings.php` | 1.0.1 | Saves/loads plugin settings option |
 | `DropProduct_Fraud_Shield` | `class-dropproduct-fraud-shield.php` | 1.0.2 | Fraud scoring engine, WC checkout hooks, COD restriction |
 | `DropProduct_Fraud_Logger` | `class-dropproduct-fraud-logger.php` | 1.0.2 | Custom DB table for fraud audit logs |
+| `DropProduct_Analytics` | `class-dropproduct-analytics.php` | 1.1.0 | Sales analytics dashboard data |
 
 ---
 
@@ -161,6 +163,26 @@ The frontend is a single JavaScript object (`DropProduct`) inside an IIFE, struc
 | `cache()` | Caches core DOM element references |
 | `cacheModal()` | Caches description modal elements |
 | `cacheDeleteModal()` | Caches delete confirmation modal elements |
+
+## Sales Analytics (Developer Notes)
+
+Location: `includes/class-dropproduct-analytics.php` (since 1.1.0)
+
+Purpose: aggregate and serve analytics data for DropProduct-created products. The service exposes an AJAX endpoint used by the admin dashboard and returns JSON with summary metrics, time-series data, top products, country breakdowns and basic channel/device buckets.
+
+Key integration points and behavior:
+- AJAX action: `dropproduct_get_analytics` — registered by the orchestrator. Requests are protected by the plugin nonce and a capability check (`manage_woocommerce`).
+- Script handle: `dropproduct-analytics` enqueues admin JS and localizes the nonce and endpoint config for the client-side dashboard.
+- Data source: uses WooCommerce orders and items filtered to products that have the `_dropproduct_product` meta flag. Time ranges are applied server-side for efficient aggregation.
+- Demo data: `admin/sql/dropproduct-demo-data.sql` contains a small dataset to test the dashboard locally.
+
+Extension points:
+- The analytics service is implemented as a standalone class so that Pro or custom code can extend, replace, or filter its output. If Pro needs to augment the response (sessions, activity counts, or extra dimensions), do so by hooking into the orchestrator or registering a custom loader that augments the AJAX handler response.
+
+Developer tips:
+- Keep heavy aggregations cached if your site has many orders — consider transient caching around the analytics queries.
+- If you need richer UTM/channel attribution, populate order meta from your tracking system, then extend the analytics class to read those meta keys when building the breakdowns.
+- Chart rendering is client-side (Chart.js). The PHP class only provides the raw datasets.
 | `cacheProPopup()` | Caches Pro lock popup elements |
 | `cachePriceSlasher()` | Caches Price Slasher bar elements and initialises `_selectedIds` |
 | `bindEvents()` | Sets up all event listeners |

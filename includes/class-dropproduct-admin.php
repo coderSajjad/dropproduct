@@ -51,6 +51,13 @@ class DropProduct_Admin
     private $dashboard_hook_suffix = '';
 
     /**
+     * Hook suffix for the Analytics page.
+     *
+     * @var string
+     */
+    private $analytics_hook_suffix = '';
+
+    /**
      * Register a top-level admin menu page and a Settings sub-menu.
      *
      * @since 1.0.0
@@ -105,6 +112,16 @@ class DropProduct_Admin
             'manage_woocommerce',
             'dropproduct-dashboard',
             array($this, 'render_dashboard_page')
+        );
+
+        // Sales Analytics sub-menu.
+        $this->analytics_hook_suffix = add_submenu_page(
+            'dropproduct',
+            __('Sales Analytics', 'dropproduct'),
+            '📈 ' . __('Sales Analytics', 'dropproduct'),
+            'manage_woocommerce',
+            'dropproduct-analytics',
+            array($this, 'render_analytics_page')
         );
     }
 
@@ -236,6 +253,40 @@ class DropProduct_Admin
             return;
         }
 
+        // Analytics page assets.
+        if ($hook_suffix === $this->analytics_hook_suffix) {
+            // Enqueue Chart.js library.
+            wp_enqueue_script(
+                'chart-js',
+                'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js',
+                array(),
+                '3.9.1',
+                true
+            );
+
+            wp_enqueue_style(
+                'dropproduct-analytics',
+                DROPPRODUCT_PLUGIN_URL . 'assets/css/admin-analytics.css',
+                array(),
+                DROPPRODUCT_VERSION
+            );
+
+            wp_enqueue_script(
+                'dropproduct-analytics',
+                DROPPRODUCT_PLUGIN_URL . 'assets/js/admin-analytics.js',
+                array('jquery', 'chart-js'),
+                DROPPRODUCT_VERSION,
+                true
+            );
+
+            wp_localize_script('dropproduct-analytics', 'dropproductAnalyticsData', array(
+                'nonce'           => wp_create_nonce('dropproduct_analytics_nonce'),
+                'currency_symbol' => get_woocommerce_currency_symbol(),
+            ));
+
+            return;
+        }
+
         // Main grid page assets.
         wp_enqueue_media();
 
@@ -350,6 +401,20 @@ class DropProduct_Admin
         include DROPPRODUCT_PLUGIN_DIR . 'admin/views/dashboard-page.php';
     }
 
+    /**
+     * Render the Sales Analytics admin page.
+     *
+    * @since 1.1.0
+     */
+    public function render_analytics_page()
+    {
+        if (! current_user_can('manage_woocommerce')) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'dropproduct'));
+        }
+
+        include DROPPRODUCT_PLUGIN_DIR . 'admin/views/analytics-page.php';
+    }
+
     // ──────────────────────────────────────────
     //  Utility
     // ──────────────────────────────────────────
@@ -367,6 +432,7 @@ class DropProduct_Admin
             $this->settings_hook_suffix,
             $this->fraud_shield_hook_suffix,
             $this->dashboard_hook_suffix,
+            $this->analytics_hook_suffix,
         ), true);
     }
 }
