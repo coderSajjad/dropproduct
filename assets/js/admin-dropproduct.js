@@ -207,11 +207,7 @@
 				self.saveField($(this));
 			});
 
-			// Delete product — open custom modal instead of confirm().
-			this.$gridBody.on('click', '.dropproduct-delete-btn', function () {
-				var $row = $(this).closest('tr');
-				self.openDeleteModal($row);
-			});
+			// Delete product — handled by 3-dot menu event delegation below.
 
 			// Confirm modal: confirm.
 			this.$confirmDelete.on('click', function () {
@@ -366,6 +362,127 @@
 			this.$slasherClear.on('click', function () {
 				self.clearSelection();
 			});
+
+			// ──── 3-dot Actions Menu ───────────────────────────────────
+			this.$gridBody.on('click', '.dropproduct-actions-dots', function (e) {
+				e.stopPropagation();
+				var $dropdown = $(this).next('.dropproduct-actions-dropdown');
+				$('.dropproduct-actions-dropdown').not($dropdown).removeClass('is-open');
+				$dropdown.toggleClass('is-open');
+			});
+			$(document).on('click', function () {
+				$('.dropproduct-actions-dropdown').removeClass('is-open');
+			});
+			this.$gridBody.on('click', '.dropproduct-delete-btn', function (e) {
+				e.stopPropagation();
+				$('.dropproduct-actions-dropdown').removeClass('is-open');
+				self.openDeleteModal($(this).closest('tr'));
+			});
+			this.$gridBody.on('click', '.dropproduct-desc-btn-action', function (e) {
+				e.stopPropagation();
+				$('.dropproduct-actions-dropdown').removeClass('is-open');
+				self.openDescriptionModal($(this).closest('tr'));
+			});
+
+			// ──── Status Dropdown ──────────────────────────────────────
+			this.$gridBody.on('change', '.dropproduct-status-select', function () {
+				var $sel = $(this), val = $sel.val(), $row = $sel.closest('tr');
+				$sel.removeClass('dropproduct-status-select--draft dropproduct-status-select--publish').addClass('dropproduct-status-select--' + val);
+				self.saveField($sel);
+				if (val === 'publish') {
+					$row.addClass('is-published');
+					$row.find('.dropproduct-publish-single-btn').fadeOut(200, function () { $(this).remove(); });
+				} else {
+					$row.removeClass('is-published');
+				}
+				self.updateDraftCount();
+			});
+
+			// ──── Search ───────────────────────────────────────────────
+			$('#dropproduct-search-input').on('input', function () {
+				var q = $(this).val().toLowerCase();
+				self.$gridBody.find('tr[data-product-id]').each(function () {
+					var $r = $(this);
+					var t = ($r.find('[data-field="title"]').val() || '').toLowerCase();
+					var s = ($r.find('[data-field="sku"]').val() || '').toLowerCase();
+					$r.toggle(t.indexOf(q) > -1 || s.indexOf(q) > -1);
+				});
+			});
+
+			// ──── Bulk Bar ─────────────────────────────────────────────
+			$('#dropproduct-bulk-close-btn, #dropproduct-bulk-clear-link').on('click', function () {
+				self.clearSelection();
+				$('#dropproduct-bulk-bar').hide();
+			});
+
+			// ──── Toolbar Dropdown Toggle ─────────────────────────────
+			$(document).on('click', '.dropproduct-toolbar-toggle', function (e) {
+				e.stopPropagation();
+				var $dropdown = $(this).siblings('.dropproduct-toolbar-dropdown');
+				$('.dropproduct-toolbar-dropdown').not($dropdown).removeClass('is-open');
+				$dropdown.toggleClass('is-open');
+			});
+			$(document).on('click', '.dropproduct-toolbar-dropdown', function (e) {
+				e.stopPropagation(); // Don't close when clicking inside
+			});
+			$(document).on('click', function () {
+				$('.dropproduct-toolbar-dropdown').removeClass('is-open');
+			});
+
+			// ──── Filters ─────────────────────────────────────────────
+			$('#dropproduct-filter-status, #dropproduct-filter-stock').on('change', function () {
+				self.applyFilters();
+			});
+			$('#dropproduct-filter-reset').on('click', function () {
+				$('#dropproduct-filter-status').val('');
+				$('#dropproduct-filter-stock').val('');
+				self.applyFilters();
+			});
+
+			// ──── Column Toggle ───────────────────────────────────────
+			$('.dropproduct-col-toggle input').on('change', function () {
+				var col = $(this).data('col');
+				var visible = $(this).is(':checked');
+				var $grid = $('#dropproduct-grid');
+				$grid.find('.dropproduct-col-' + col).toggle(visible);
+				$grid.find('td.dropproduct-col-' + col).toggle(visible);
+			});
+
+			// ──── Grid Density ────────────────────────────────────────
+			$('.dropproduct-density-btn').on('click', function () {
+				$('.dropproduct-density-btn').removeClass('is-active');
+				$(this).addClass('is-active');
+				var density = $(this).data('density');
+				$('#dropproduct-grid').removeClass('dropproduct-grid--comfortable dropproduct-grid--compact')
+					.addClass('dropproduct-grid--' + density);
+			});
+
+			// ──── Price Toggle (arrow to expand sub-row) ────────────
+			this.$gridBody.on('click', '.dropproduct-price-toggle-btn', function (e) {
+				e.stopPropagation();
+				var $btn = $(this);
+				var $row = $btn.closest('tr');
+				var productId = $row.data('product-id');
+				var $detailRow = self.$gridBody.find('tr.dropproduct-detail-row[data-parent-id="' + productId + '"]');
+				$btn.toggleClass('is-open');
+				$detailRow.slideToggle(200);
+			});
+
+			// ──── Stock Dropdown Color ────────────────────────────────
+			this.$gridBody.on('change', '.dropproduct-stock-select', function () {
+				var $sel = $(this);
+				var val = $sel.val();
+				$sel.removeClass('dropproduct-stock-select--instock dropproduct-stock-select--outofstock dropproduct-stock-select--onbackorder')
+					.addClass('dropproduct-stock-select--' + val);
+				// Hide qty input when out of stock.
+				var $qty = $sel.closest('.dropproduct-stock-cell').find('.dropproduct-stock-qty');
+				if (val === 'outofstock') {
+					$qty.hide();
+				} else {
+					$qty.show();
+				}
+				self.saveField($sel);
+			});
 		},
 
 		/**
@@ -501,18 +618,14 @@
 				? '<span class="dropproduct-gallery-badge">+' + product.gallery_count + '</span>'
 				: '';
 
-			var stockOptions = this.buildStockOptions(product.stock_status);
 			var categoryOptions = this.buildCategoryOptions(product.category_id);
 			var statusClass = product.status === 'publish' ? 'publish' : 'draft';
 			var isPublished = product.status === 'publish';
 			var isSelected  = !!this._selectedIds[String(product.id)];
 
-			// Publish single button — hidden when already published.
-			var publishSingleBtn = isPublished
-				? ''
-				: '<button type="button" class="dropproduct-publish-single-btn" title="' + this.escAttr('Publish this product') + '">'
-					+ '<span class="dashicons dashicons-yes-alt"></span>'
-					+ '</button>';
+			// Stock display
+			var stockStatusLabel = product.stock_status === 'instock' ? 'In stock' : (product.stock_status === 'outofstock' ? 'Out of stock' : 'On backorder');
+			var stockBadgeClass  = product.stock_status === 'instock' ? 'dropproduct-stock-badge--instock' : (product.stock_status === 'outofstock' ? 'dropproduct-stock-badge--outofstock' : 'dropproduct-stock-badge--backorder');
 
 			var classes = [];
 			if (isPublished) classes.push('is-published');
@@ -520,74 +633,76 @@
 
 			return '<tr id="dropproduct-row-' + product.id + '" data-product-id="' + product.id + '"'
 				+ (classes.length ? ' class="' + classes.join(' ') + '"' : '') + '>'
-				+ '<td class="dropproduct-col-check">'
-				+ '<label class="dropproduct-check-label">'
-				+ '<input type="checkbox" class="dropproduct-row-check"' + (isSelected ? ' checked' : '') + ' />'
-				+ '<span class="dropproduct-check-custom"></span>'
-				+ '</label>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-image">'
-				+ (product.image_thumb
-					? '<img src="' + product.image_thumb + '" alt="" class="dropproduct-thumb" data-full="' + product.image_full + '" />'
-					: '<span class="dashicons dashicons-format-image" style="font-size:40px;color:#dcdcde;"></span>')
-				+ galleryBadge
-				+ '</td>'
-				+ '<td class="dropproduct-col-title">'
-				+ '<input type="text" class="dropproduct-editable" data-field="title" value="' + this.escAttr(product.title) + '" />'
-				+ '</td>'
-				+ '<td class="dropproduct-col-desc">'
-				+ '<button type="button" class="dropproduct-desc-btn' + (product.description ? ' has-desc' : '') + '" title="Edit description">'
-				+ '<span class="dashicons dashicons-edit"></span>'
-				+ (product.description ? '<span class="dropproduct-desc-dot"></span>' : '')
-				+ '</button>'
+				+ '<td class="dropproduct-col-check"><label class="dropproduct-check-label"><input type="checkbox" class="dropproduct-row-check"' + (isSelected ? ' checked' : '') + ' /><span class="dropproduct-check-custom"></span></label></td>'
+				+ '<td class="dropproduct-col-drag"><span class="dropproduct-drag-handle" title="Drag to reorder"><span class="dashicons dashicons-menu"></span></span></td>'
+				// Product (merged: image + title + SKU + category)
+				+ '<td class="dropproduct-col-product"><div class="dropproduct-product-cell">'
+				+ '<div class="dropproduct-product-thumb-wrap">'
+				+ (product.image_thumb ? '<img src="' + product.image_thumb + '" alt="" class="dropproduct-thumb" data-full="' + product.image_full + '" />' : '<span class="dashicons dashicons-format-image dropproduct-thumb-placeholder"></span>')
+				+ galleryBadge + '</div>'
+				+ '<div class="dropproduct-product-info">'
+				+ '<input type="text" class="dropproduct-editable dropproduct-product-title" data-field="title" value="' + this.escAttr(product.title) + '" />'
+				+ '<div class="dropproduct-product-meta">'
+				+ '<span class="dropproduct-product-sku">SKU: <input type="text" class="dropproduct-editable dropproduct-sku-inline" data-field="sku" value="' + this.escAttr(product.sku) + '" /></span>'
+				+ '<span class="dropproduct-product-meta-sep">&bull;</span>'
+				+ '<span class="dropproduct-product-cat"><select class="dropproduct-editable dropproduct-cat-inline" data-field="category">' + categoryOptions + '</select></span>'
+				+ '</div></div>'
+				+ '<button type="button" class="dropproduct-desc-btn' + (product.description ? ' has-desc' : '') + '" title="Edit description"><span class="dashicons dashicons-edit"></span>' + (product.description ? '<span class="dropproduct-desc-dot"></span>' : '') + '</button>'
 				+ '<input type="hidden" class="dropproduct-desc-value" value="' + this.escAttr(product.description) + '" />'
-				+ '</td>'
-				+ '<td class="dropproduct-col-price">'
-				+ '<div class="dropproduct-price-wrap">'
-				+ '<span class="dropproduct-currency">$</span>'
-				+ '<input type="number" class="dropproduct-editable dropproduct-price-input" data-field="regular_price" value="' + this.escAttr(product.regular_price) + '" step="0.01" min="0" placeholder="0.00" />'
+				+ '</div></td>'
+				// Price (Regular visible + arrow toggle)
+				+ '<td class="dropproduct-col-price"><div class="dropproduct-price-cell">'
+				+ '<span class="dropproduct-price-main"><span class="dropproduct-currency-symbol">$</span><input type="number" class="dropproduct-editable dropproduct-price-input" data-field="regular_price" value="' + this.escAttr(product.regular_price) + '" step="0.01" min="0" placeholder="0.00" /></span>'
+				+ '<button type="button" class="dropproduct-price-toggle-btn" title="Show price details"><span class="dashicons dashicons-arrow-down-alt2"></span></button>'
+				+ '</div></td>'
+				// Stock (quantity + dropdown)
+				+ '<td class="dropproduct-col-stock"><div class="dropproduct-stock-cell">'
+				+ '<input type="number" class="dropproduct-editable dropproduct-stock-qty" data-field="stock_quantity" value="' + this.escAttr(product.stock_quantity || '') + '" min="0" placeholder="—"' + (product.stock_status === 'outofstock' ? ' style="display:none;"' : '') + ' />'
+				+ '<div class="dropproduct-stock-select-wrap">'
+				+ '<select class="dropproduct-editable dropproduct-stock-select dropproduct-stock-select--' + (product.stock_status || 'instock') + '" data-field="stock_status">' + this.buildStockOptions(product.stock_status) + '</select>'
 				+ '</div>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-sale-price">'
-				+ '<div class="dropproduct-price-wrap">'
-				+ '<span class="dropproduct-currency">$</span>'
-				+ '<input type="number" class="dropproduct-editable dropproduct-price-input" data-field="sale_price" value="' + this.escAttr(product.sale_price) + '" step="0.01" min="0" placeholder="0.00" />'
+				+ '</div></td>'
+				// Status (dropdown)
+				+ '<td class="dropproduct-col-status"><div class="dropproduct-status-cell">'
+				+ '<select class="dropproduct-status-select dropproduct-status-select--' + statusClass + '" data-field="status">'
+				+ '<option value="publish"' + (product.status === 'publish' ? ' selected' : '') + '>Published</option>'
+				+ '<option value="draft"' + (product.status === 'draft' ? ' selected' : '') + '>Draft</option>'
+				+ '</select></div></td>'
+				// Actions (3-dot menu)
+				+ '<td class="dropproduct-col-actions"><div class="dropproduct-actions-cell">'
+				+ (isPublished ? '' : '<button type="button" class="dropproduct-publish-single-btn" title="Publish"><span class="dashicons dashicons-yes-alt"></span></button>')
+				+ '<div class="dropproduct-actions-menu-wrap">'
+				+ '<button type="button" class="dropproduct-actions-dots" title="More actions"><span class="dashicons dashicons-ellipsis"></span></button>'
+				+ '<div class="dropproduct-actions-dropdown">'
+				+ '<button type="button" class="dropproduct-action-item dropproduct-desc-btn-action"><span class="dashicons dashicons-edit"></span> Description</button>'
+				+ '<button type="button" class="dropproduct-action-item dropproduct-delete-btn"><span class="dashicons dashicons-trash"></span> Delete</button>'
+				+ '</div></div></div></td>'
+				+ '</tr>'
+				// ── Expandable sub-row (hidden by default) ──
+				+ '<tr class="dropproduct-detail-row" data-parent-id="' + product.id + '" style="display:none;">'
+				+ '<td colspan="7">'
+				+ '<div class="dropproduct-detail-row-inner">'
+				+ '<div class="dropproduct-detail-field">'
+				+ '<label>Sale Price</label>'
+				+ '<div class="dropproduct-detail-input-wrap"><span class="dropproduct-currency-symbol">$</span><input type="number" class="dropproduct-editable dropproduct-price-input dropproduct-price-input--sale" data-field="sale_price" value="' + this.escAttr(product.sale_price) + '" step="0.01" min="0" placeholder="0.00" /></div>'
 				+ '</div>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-sku">'
-				+ '<input type="text" class="dropproduct-editable" data-field="sku" value="' + this.escAttr(product.sku) + '" />'
-				+ '</td>'
-				+ '<td class="dropproduct-col-stock">'
-				+ '<select class="dropproduct-editable" data-field="stock_status">' + stockOptions + '</select>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-category">'
-				+ '<select class="dropproduct-editable" data-field="category">' + categoryOptions + '</select>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-status">'
-				+ '<span class="dropproduct-status dropproduct-status--' + statusClass + '">' + product.status + '</span>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-actions">'
-				+ publishSingleBtn
-				+ '<button type="button" class="dropproduct-delete-btn" title="Delete">'
-				+ '<span class="dashicons dashicons-trash"></span>'
-				+ '</button>'
-				+ '</td>'
-				// Cost-to-Profit Tracker — three read/write financial columns.
-				+ '<td class="dropproduct-col-cost">'
-				+ '<div class="dropproduct-price-wrap">'
-				+ '<span class="dropproduct-currency">$</span>'
-				+ '<input type="number" class="dropproduct-cost-input" data-field="cost_price" value="' + this.escAttr(product.cost_price > 0 ? product.cost_price : '') + '" step="0.01" min="0" placeholder="0.00" />'
+				+ '<div class="dropproduct-detail-field">'
+				+ '<label>SKU</label>'
+				+ '<div class="dropproduct-detail-input-wrap"><input type="text" class="dropproduct-editable dropproduct-sku-detail" data-field="sku" value="' + this.escAttr(product.sku) + '" placeholder="" /></div>'
 				+ '</div>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-profit">'
-				+ '<span class="dropproduct-profit-display">'
-				+ this.formatFinancials(product.regular_price, product.sale_price, product.cost_price).profitHtml
-				+ '</span>'
-				+ '</td>'
-				+ '<td class="dropproduct-col-margin">'
-				+ '<span class="dropproduct-margin-display">'
-				+ this.formatFinancials(product.regular_price, product.sale_price, product.cost_price).marginHtml
-				+ '</span>'
+				+ '<div class="dropproduct-detail-field">'
+				+ '<label>Cost Price</label>'
+				+ '<div class="dropproduct-detail-input-wrap"><span class="dropproduct-currency-symbol">$</span><input type="number" class="dropproduct-editable dropproduct-cost-input" data-field="cost_price" value="' + this.escAttr(product.cost_price > 0 ? product.cost_price : '') + '" step="0.01" min="0" placeholder="0.00" /></div>'
+				+ '</div>'
+				+ '<div class="dropproduct-detail-field dropproduct-detail-field--readonly">'
+				+ '<label>Profit</label>'
+				+ '<span class="dropproduct-profit-display">' + this.formatFinancials(product.regular_price, product.sale_price, product.cost_price).profitHtml + '</span>'
+				+ '</div>'
+				+ '<div class="dropproduct-detail-field dropproduct-detail-field--readonly">'
+				+ '<label>Margin</label>'
+				+ '<span class="dropproduct-margin-display">' + this.formatFinancials(product.regular_price, product.sale_price, product.cost_price).marginHtml + '</span>'
+				+ '</div>'
+				+ '</div>'
 				+ '</td>'
 				+ '</tr>';
 		},
@@ -932,10 +1047,10 @@
 				if (response.success) {
 					// Mark row as published.
 					$row.addClass('is-published');
-					$row.find('.dropproduct-status')
-						.removeClass('dropproduct-status--draft')
-						.addClass('dropproduct-status--publish')
-						.text('publish');
+					$row.find('.dropproduct-status-select')
+						.val('publish')
+						.removeClass('dropproduct-status-select--draft')
+						.addClass('dropproduct-status-select--publish');
 
 					// Remove the publish button since it's now live.
 					$btn.fadeOut(200, function () { $(this).remove(); });
@@ -1018,10 +1133,10 @@
 					$.each(response.data.published, function (i, id) {
 						var $row = $('#dropproduct-row-' + id);
 						$row.addClass('is-published');
-						$row.find('.dropproduct-status')
-							.removeClass('dropproduct-status--draft')
-							.addClass('dropproduct-status--publish')
-							.text('publish');
+						$row.find('.dropproduct-status-select')
+							.val('publish')
+							.removeClass('dropproduct-status-select--draft')
+							.addClass('dropproduct-status-select--publish');
 						// Remove individual publish button.
 						$row.find('.dropproduct-publish-single-btn').remove();
 					});
@@ -1053,9 +1168,44 @@
 		 * Update the draft product count display.
 		 */
 		updateDraftCount: function () {
-			var count = this.$gridBody.find('tr[data-product-id]').not('.is-published').length;
+			var $allRows = this.$gridBody.find('tr[data-product-id]');
+			var count = $allRows.not('.is-published').length;
+			var total = $allRows.length;
 			this.$draftCount.text(count);
 			this.$publishBtn.prop('disabled', count === 0);
+			$('#dropproduct-product-count').text(total + ' product' + (total !== 1 ? 's' : ''));
+			$('#dropproduct-page-range').text(total > 0 ? '1-' + total + ' of ' + total : '1-0 of 0');
+		},
+
+		/**
+		 * Apply toolbar filters (status + stock) to grid rows.
+		 */
+		applyFilters: function () {
+			var statusFilter = $('#dropproduct-filter-status').val();
+			var stockFilter  = $('#dropproduct-filter-stock').val();
+
+			this.$gridBody.find('tr[data-product-id]').each(function () {
+				var $row = $(this);
+				var productId = $row.data('product-id');
+				var show = true;
+
+				// Status filter
+				if (statusFilter) {
+					var isPublished = $row.hasClass('is-published');
+					if (statusFilter === 'publish' && !isPublished) show = false;
+					if (statusFilter === 'draft' && isPublished)    show = false;
+				}
+
+				// Stock filter
+				if (show && stockFilter) {
+					var stockVal = $row.find('.dropproduct-stock-select').val() || 'instock';
+					if (stockVal !== stockFilter) show = false;
+				}
+
+				$row.toggle(show);
+				// Also hide/show the detail sub-row
+				$('tr.dropproduct-detail-row[data-parent-id="' + productId + '"]').toggle(false);
+			});
 		},
 
 		// ──────────────────────────────────────────
@@ -1428,6 +1578,14 @@
 			this.$slasherCount.text(count);
 			this.$slasherCount.toggleClass('has-count', count > 0);
 			this.$slasherCountBar.text(count);
+			var $bb = $('#dropproduct-bulk-bar');
+			if (count > 0) {
+				$bb.show();
+				$('#dropproduct-bulk-selected-count').text(count);
+				$('#dropproduct-bulk-summary-text').text(count + ' product' + (count !== 1 ? 's' : '') + ' selected');
+			} else {
+				$bb.hide();
+			}
 		},
 
 		/**

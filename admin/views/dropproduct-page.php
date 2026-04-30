@@ -253,6 +253,64 @@ $is_pro = defined( 'DROPPRODUCT_PRO_VERSION' );
 
 
 	<div class="dropproduct-grid-wrap" id="dropproduct-grid-wrap">
+		<div class="dropproduct-grid-toolbar">
+			<div class="dropproduct-grid-toolbar__left">
+				<span class="dropproduct-grid-toolbar__count" id="dropproduct-product-count">0 <?php esc_html_e( 'products', 'dropproduct' ); ?></span>
+			</div>
+			<div class="dropproduct-grid-toolbar__right">
+				<div class="dropproduct-search-wrap">
+					<input type="text" class="dropproduct-search-input" id="dropproduct-search-input" placeholder="<?php esc_attr_e( 'Search products...', 'dropproduct' ); ?>" />
+					<span class="dashicons dashicons-search dropproduct-search-icon"></span>
+				</div>
+
+				<!-- Filters -->
+				<div class="dropproduct-toolbar-dropdown-wrap">
+					<button type="button" class="dropproduct-toolbar-btn dropproduct-toolbar-toggle" id="dropproduct-filter-btn"><span class="dashicons dashicons-filter"></span> <?php esc_html_e( 'Filters', 'dropproduct' ); ?></button>
+					<div class="dropproduct-toolbar-dropdown" id="dropproduct-filter-dropdown">
+						<div class="dropproduct-toolbar-dropdown__title"><?php esc_html_e( 'Filter by', 'dropproduct' ); ?></div>
+						<label class="dropproduct-toolbar-dropdown__label"><?php esc_html_e( 'Status', 'dropproduct' ); ?></label>
+						<select id="dropproduct-filter-status" class="dropproduct-toolbar-dropdown__select">
+							<option value=""><?php esc_html_e( 'All', 'dropproduct' ); ?></option>
+							<option value="publish"><?php esc_html_e( 'Published', 'dropproduct' ); ?></option>
+							<option value="draft"><?php esc_html_e( 'Draft', 'dropproduct' ); ?></option>
+						</select>
+						<label class="dropproduct-toolbar-dropdown__label"><?php esc_html_e( 'Stock', 'dropproduct' ); ?></label>
+						<select id="dropproduct-filter-stock" class="dropproduct-toolbar-dropdown__select">
+							<option value=""><?php esc_html_e( 'All', 'dropproduct' ); ?></option>
+							<option value="instock"><?php esc_html_e( 'In stock', 'dropproduct' ); ?></option>
+							<option value="outofstock"><?php esc_html_e( 'Out of stock', 'dropproduct' ); ?></option>
+							<option value="onbackorder"><?php esc_html_e( 'On backorder', 'dropproduct' ); ?></option>
+						</select>
+						<button type="button" class="button button-small dropproduct-filter-reset-btn" id="dropproduct-filter-reset"><?php esc_html_e( 'Reset Filters', 'dropproduct' ); ?></button>
+					</div>
+				</div>
+
+				<!-- Columns -->
+				<div class="dropproduct-toolbar-dropdown-wrap">
+					<button type="button" class="dropproduct-toolbar-btn dropproduct-toolbar-toggle" id="dropproduct-columns-btn"><span class="dashicons dashicons-columns"></span> <?php esc_html_e( 'Columns', 'dropproduct' ); ?></button>
+					<div class="dropproduct-toolbar-dropdown" id="dropproduct-columns-dropdown">
+						<div class="dropproduct-toolbar-dropdown__title"><?php esc_html_e( 'Toggle columns', 'dropproduct' ); ?></div>
+						<label class="dropproduct-col-toggle"><input type="checkbox" data-col="price" checked /> <?php esc_html_e( 'Price', 'dropproduct' ); ?></label>
+						<label class="dropproduct-col-toggle"><input type="checkbox" data-col="stock" checked /> <?php esc_html_e( 'Stock', 'dropproduct' ); ?></label>
+						<label class="dropproduct-col-toggle"><input type="checkbox" data-col="status" checked /> <?php esc_html_e( 'Status', 'dropproduct' ); ?></label>
+						<label class="dropproduct-col-toggle"><input type="checkbox" data-col="actions" checked /> <?php esc_html_e( 'Actions', 'dropproduct' ); ?></label>
+					</div>
+				</div>
+
+				<!-- Settings -->
+				<div class="dropproduct-toolbar-dropdown-wrap">
+					<button type="button" class="dropproduct-toolbar-btn dropproduct-toolbar-btn--icon dropproduct-toolbar-toggle" id="dropproduct-settings-gear-btn" title="<?php esc_attr_e( 'Grid Settings', 'dropproduct' ); ?>"><span class="dashicons dashicons-admin-generic"></span></button>
+					<div class="dropproduct-toolbar-dropdown" id="dropproduct-settings-dropdown">
+						<div class="dropproduct-toolbar-dropdown__title"><?php esc_html_e( 'Grid Settings', 'dropproduct' ); ?></div>
+						<label class="dropproduct-toolbar-dropdown__label"><?php esc_html_e( 'Density', 'dropproduct' ); ?></label>
+						<div class="dropproduct-density-group">
+							<button type="button" class="dropproduct-density-btn is-active" data-density="comfortable"><?php esc_html_e( 'Comfortable', 'dropproduct' ); ?></button>
+							<button type="button" class="dropproduct-density-btn" data-density="compact"><?php esc_html_e( 'Compact', 'dropproduct' ); ?></button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<table class="dropproduct-grid widefat" id="dropproduct-grid">
 			<thead>
 				<tr>
@@ -262,27 +320,17 @@ $is_pro = defined( 'DROPPRODUCT_PRO_VERSION' );
 							<span class="dropproduct-check-custom"></span>
 						</label>
 					</th>
-					<th class="dropproduct-col-image"><?php esc_html_e( 'Image', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-title"><?php esc_html_e( 'Title', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-desc"><?php esc_html_e( 'Desc', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-price"><?php esc_html_e( 'Regular Price', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-sale-price"><?php esc_html_e( 'Sale Price', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-sku"><?php esc_html_e( 'SKU', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-stock"><?php esc_html_e( 'Stock', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-category"><?php esc_html_e( 'Category', 'dropproduct' ); ?></th>
+					<th class="dropproduct-col-drag"></th>
+					<th class="dropproduct-col-product"><?php esc_html_e( 'Product', 'dropproduct' ); ?> <span class="dropproduct-sort-icon dashicons dashicons-sort"></span></th>
+					<th class="dropproduct-col-price"><?php esc_html_e( 'Price', 'dropproduct' ); ?> <span class="dropproduct-col-info dashicons dashicons-info" title="<?php esc_attr_e( 'Regular & Sale price', 'dropproduct' ); ?>"></span></th>
+					<th class="dropproduct-col-stock"><?php esc_html_e( 'Stock', 'dropproduct' ); ?> <span class="dropproduct-col-info dashicons dashicons-info" title="<?php esc_attr_e( 'Stock quantity & status', 'dropproduct' ); ?>"></span></th>
 					<th class="dropproduct-col-status"><?php esc_html_e( 'Status', 'dropproduct' ); ?></th>
 					<th class="dropproduct-col-actions"><?php esc_html_e( 'Actions', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-cost" title="<?php esc_attr_e( 'Your purchase cost for this product', 'dropproduct' ); ?>">
-						<?php esc_html_e( 'Cost Price', 'dropproduct' ); ?>
-						<span class="dropproduct-col-hint"><?php esc_html_e( 'Not shown to customers', 'dropproduct' ); ?></span>
-					</th>
-					<th class="dropproduct-col-profit"><?php esc_html_e( 'Profit', 'dropproduct' ); ?></th>
-					<th class="dropproduct-col-margin"><?php esc_html_e( 'Margin %', 'dropproduct' ); ?></th>
 				</tr>
 			</thead>
 			<tbody id="dropproduct-grid-body">
 				<tr class="dropproduct-empty-row" id="dropproduct-empty-row">
-					<td colspan="14">
+					<td colspan="7">
 						<div class="dropproduct-empty-state">
 							<span class="dashicons dashicons-format-gallery"></span>
 							<p><?php esc_html_e( 'No draft products yet. Upload images to get started.', 'dropproduct' ); ?></p>
@@ -291,6 +339,75 @@ $is_pro = defined( 'DROPPRODUCT_PRO_VERSION' );
 				</tr>
 			</tbody>
 		</table>
+		<!-- Bottom Bulk Action Bar -->
+		<div class="dropproduct-bulk-bar" id="dropproduct-bulk-bar" style="display:none;">
+			<div class="dropproduct-bulk-bar__left">
+				<span class="dropproduct-bulk-count-badge" id="dropproduct-bulk-selected-count">0</span>
+				<span class="dropproduct-bulk-count-label"><?php esc_html_e( 'selected', 'dropproduct' ); ?></span>
+				<button type="button" class="dropproduct-bulk-clear-link" id="dropproduct-bulk-clear-link"><?php esc_html_e( 'Clear', 'dropproduct' ); ?></button>
+			</div>
+			<div class="dropproduct-bulk-bar__center">
+				<span class="dropproduct-bulk-divider"></span>
+				<span class="dropproduct-bulk-label"><?php esc_html_e( 'BULK ACTIONS', 'dropproduct' ); ?></span>
+				<div class="dropproduct-bulk-select-wrap">
+					<select class="dropproduct-bulk-action-select" id="dropproduct-bulk-action-select">
+						<option value=""><?php esc_html_e( 'Update status', 'dropproduct' ); ?></option>
+						<option value="publish"><?php esc_html_e( 'Publish all', 'dropproduct' ); ?></option>
+						<option value="draft"><?php esc_html_e( 'Move to draft', 'dropproduct' ); ?></option>
+						<option value="delete"><?php esc_html_e( 'Delete selected', 'dropproduct' ); ?></option>
+					</select>
+					<span class="dashicons dashicons-arrow-down-alt2 dropproduct-bulk-select-arrow"></span>
+				</div>
+				<span class="dropproduct-bulk-divider"></span>
+				<span class="dropproduct-bulk-label"><?php esc_html_e( 'STATUS', 'dropproduct' ); ?></span>
+				<div class="dropproduct-bulk-select-wrap">
+					<select class="dropproduct-bulk-status-select" id="dropproduct-bulk-status-select">
+						<option value="publish"><?php esc_html_e( 'Published', 'dropproduct' ); ?></option>
+						<option value="draft"><?php esc_html_e( 'Draft', 'dropproduct' ); ?></option>
+					</select>
+					<span class="dashicons dashicons-arrow-down-alt2 dropproduct-bulk-select-arrow"></span>
+				</div>
+				<button type="button" class="dropproduct-bulk-apply-btn" id="dropproduct-bulk-apply-btn">
+					<?php esc_html_e( 'Apply', 'dropproduct' ); ?>
+				</button>
+			</div>
+			<div class="dropproduct-bulk-bar__right">
+				<span class="dropproduct-bulk-summary-pill" id="dropproduct-bulk-summary-text">
+					0 <?php esc_html_e( 'products selected', 'dropproduct' ); ?>
+				</span>
+				<button type="button" class="dropproduct-bulk-close-btn" id="dropproduct-bulk-close-btn" title="<?php esc_attr_e( 'Dismiss', 'dropproduct' ); ?>">
+					<span class="dashicons dashicons-no-alt"></span>
+				</button>
+			</div>
+		</div>
+		<!-- Pagination -->
+		<div class="dropproduct-pagination" id="dropproduct-pagination">
+			<div class="dropproduct-pagination__left">
+				<label><?php esc_html_e( 'Rows per page:', 'dropproduct' ); ?></label>
+				<div class="dropproduct-bulk-select-wrap">
+					<select id="dropproduct-rows-per-page" class="dropproduct-rows-select">
+						<option value="20" selected>20</option>
+						<option value="50">50</option>
+						<option value="100">100</option>
+					</select>
+					<span class="dashicons dashicons-arrow-down-alt2 dropproduct-bulk-select-arrow"></span>
+				</div>
+			</div>
+			<div class="dropproduct-pagination__center">
+				<span id="dropproduct-page-range" class="dropproduct-page-range-text">1-0 of 0</span>
+			</div>
+			<div class="dropproduct-pagination__right">
+				<button type="button" class="dropproduct-page-btn" id="dropproduct-prev-page" disabled>
+					<span class="dashicons dashicons-arrow-left-alt2"></span>
+					<?php esc_html_e( 'Previous', 'dropproduct' ); ?>
+				</button>
+				<span class="dropproduct-page-current" id="dropproduct-page-current">1</span>
+				<button type="button" class="dropproduct-page-btn" id="dropproduct-next-page" disabled>
+					<?php esc_html_e( 'Next', 'dropproduct' ); ?>
+					<span class="dashicons dashicons-arrow-right-alt2"></span>
+				</button>
+			</div>
+		</div>
 	</div>
 
 	<div class="dropproduct-image-preview" id="dropproduct-image-preview" style="display:none;">

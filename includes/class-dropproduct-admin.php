@@ -142,6 +142,14 @@ class DropProduct_Admin
             array(),
             DROPPRODUCT_VERSION
         );
+
+        // Grid redesign overlay styles.
+        wp_enqueue_style(
+            'dropproduct-grid-redesign',
+            DROPPRODUCT_PLUGIN_URL . 'assets/css/admin-grid-redesign.css',
+            array('dropproduct-admin'),
+            DROPPRODUCT_VERSION
+        );
     }
 
     /**
