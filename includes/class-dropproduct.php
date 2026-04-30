@@ -76,6 +76,7 @@ class DropProduct
         $this->loader->add_action('admin_menu', $admin, 'add_menu_page');
         $this->loader->add_action('admin_enqueue_scripts', $admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $admin, 'enqueue_scripts');
+        $this->loader->add_action('in_admin_header', $admin, 'suppress_other_notices');
     }
 
     /**
@@ -97,6 +98,13 @@ class DropProduct
         $this->loader->add_action('wp_ajax_dropproduct_bulk_price_adjust', $ajax, 'handle_bulk_price_adjust');
         $this->loader->add_action('wp_ajax_dropproduct_delete_product', $ajax, 'handle_delete_product');
         $this->loader->add_action('wp_ajax_dropproduct_load_products', $ajax, 'handle_load_products');
+
+        // Bulk editing.
+        $this->loader->add_action( 'wp_ajax_dropproduct_bulk_update', $ajax, 'handle_bulk_update' );
+        $this->loader->add_action( 'wp_ajax_dropproduct_duplicate',   $ajax, 'handle_duplicate_product' );
+
+        // SEO custom field handler (hooked into free plugin's extension point).
+        $this->loader->add_action( 'dropproduct_update_custom_field', $ajax, 'handle_custom_field_update', 10, 3 );
 
         // Settings AJAX.
         $settings = new DropProduct_Settings();

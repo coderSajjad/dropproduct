@@ -44,36 +44,35 @@ $is_pro = defined( 'DROPPRODUCT_PRO_VERSION' );
 	 */
 	do_action( 'dropproduct_after_header' );
 
-	// Show locked bulk bar when Pro is not active.
 	if ( ! $is_pro ) :
 	?>
-	<div class="dropproduct-pro-bulk-bar dropproduct-locked-feature" id="dropproduct-bulk-bar-locked" style="display:none;">
+	<div class="dropproduct-pro-bulk-bar" id="dropproduct-pro-bulk-bar" style="display:none;">
 		<div class="dropproduct-pro-bulk-bar__left">
 			<span class="dropproduct-pro-bulk-count">
-				<strong id="dropproduct-selected-count-locked">0</strong>
+				<strong id="dropproduct-pro-selected-count">0</strong>
 				<?php esc_html_e( 'selected', 'dropproduct' ); ?>
 			</span>
 		</div>
 		<div class="dropproduct-pro-bulk-bar__right">
-			<button type="button" class="button dropproduct-pro-bulk-btn dropproduct-pro-lock-trigger">
+			<button type="button" class="button dropproduct-pro-bulk-btn" data-action="price">
 				<span class="dashicons dashicons-money-alt"></span>
 				<?php esc_html_e( 'Set Price', 'dropproduct' ); ?>
-				<span class="dropproduct-lock-icon dashicons dashicons-lock"></span>
 			</button>
-			<button type="button" class="button dropproduct-pro-bulk-btn dropproduct-pro-lock-trigger">
+			<button type="button" class="button dropproduct-pro-bulk-btn" data-action="category">
 				<span class="dashicons dashicons-category"></span>
 				<?php esc_html_e( 'Set Category', 'dropproduct' ); ?>
-				<span class="dropproduct-lock-icon dashicons dashicons-lock"></span>
 			</button>
-			<button type="button" class="button dropproduct-pro-bulk-btn dropproduct-pro-lock-trigger">
+			<button type="button" class="button dropproduct-pro-bulk-btn" data-action="stock">
 				<span class="dashicons dashicons-clipboard"></span>
 				<?php esc_html_e( 'Set Stock', 'dropproduct' ); ?>
-				<span class="dropproduct-lock-icon dashicons dashicons-lock"></span>
 			</button>
-			<button type="button" class="button dropproduct-pro-bulk-btn dropproduct-pro-lock-trigger">
-				<span class="dashicons dashicons-admin-settings"></span>
-				<?php esc_html_e( 'Apply Presets', 'dropproduct' ); ?>
-				<span class="dropproduct-lock-icon dashicons dashicons-lock"></span>
+			<button type="button" class="button dropproduct-pro-bulk-btn" data-action="tax">
+				<span class="dashicons dashicons-editor-paste-text"></span>
+				<?php esc_html_e( 'Tax Class', 'dropproduct' ); ?>
+			</button>
+			<button type="button" class="button dropproduct-pro-bulk-btn" data-action="shipping">
+				<span class="dashicons dashicons-car"></span>
+				<?php esc_html_e( 'Shipping', 'dropproduct' ); ?>
 			</button>
 		</div>
 	</div>
@@ -342,27 +341,25 @@ $is_pro = defined( 'DROPPRODUCT_PRO_VERSION' );
 		</div>
 	</div>
 
-	<!-- Pro Feature Lock Popup (Free version only) -->
+	<!-- Bulk Edit Prompt Modal (shown when Pro is not active) -->
 	<?php if ( ! $is_pro ) : ?>
-	<div class="dropproduct-pro-overlay" id="dropproduct-pro-overlay"></div>
-	<div class="dropproduct-pro-popup" id="dropproduct-pro-popup">
-		<div class="dropproduct-pro-popup__icon">
-			<span class="dashicons dashicons-lock"></span>
-		</div>
-		<h3><?php esc_html_e( 'Pro Feature', 'dropproduct' ); ?></h3>
-		<p><?php esc_html_e( 'This feature is available in DropProduct Pro. Upgrade to unlock bulk editing, session management, activity log, and much more.', 'dropproduct' ); ?></p>
-		<div class="dropproduct-pro-popup__actions">
-			<a href="https://wordpress.org/plugins/dropproduct-pro/" target="_blank" class="button button-primary dropproduct-pro-upgrade-btn" id="dropproduct-pro-upgrade-btn">
-				<span class="dashicons dashicons-star-filled"></span>
-				<?php esc_html_e( 'Upgrade to Pro', 'dropproduct' ); ?>
-			</a>
-			<button type="button" class="button button-secondary" id="dropproduct-pro-popup-close">
-				<?php esc_html_e( 'Maybe Later', 'dropproduct' ); ?>
+	<div class="dropproduct-pro-prompt-overlay" id="dropproduct-pro-prompt-overlay"></div>
+	<div class="dropproduct-pro-prompt-modal" id="dropproduct-pro-prompt-modal">
+		<div class="dropproduct-pro-prompt-modal__header">
+			<h3 id="dropproduct-pro-prompt-title"></h3>
+			<button type="button" class="dropproduct-pro-prompt-close" id="dropproduct-pro-prompt-close">
+				<span class="dashicons dashicons-no-alt"></span>
 			</button>
 		</div>
-		<button type="button" class="dropproduct-pro-popup__close" id="dropproduct-pro-popup-x">
-			<span class="dashicons dashicons-no-alt"></span>
-		</button>
+		<div class="dropproduct-pro-prompt-modal__body" id="dropproduct-pro-prompt-body"></div>
+		<div class="dropproduct-pro-prompt-modal__footer">
+			<button type="button" class="button button-secondary" id="dropproduct-pro-prompt-cancel">
+				<?php esc_html_e( 'Cancel', 'dropproduct' ); ?>
+			</button>
+			<button type="button" class="button button-primary" id="dropproduct-pro-prompt-apply">
+				<?php esc_html_e( 'Apply', 'dropproduct' ); ?>
+			</button>
+		</div>
 	</div>
 	<?php endif; ?>
 

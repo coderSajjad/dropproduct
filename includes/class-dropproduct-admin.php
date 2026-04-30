@@ -98,7 +98,7 @@ class DropProduct_Admin
         $this->fraud_shield_hook_suffix = add_submenu_page(
             'dropproduct',
             __('Ultimate Order Shield', 'dropproduct'),
-            '🛡️ ' . __('Order Shield', 'dropproduct'),
+            __('Order Shield', 'dropproduct'),
             'manage_woocommerce',
             'dropproduct-fraud-shield',
             array($this, 'render_fraud_shield_page')
@@ -108,7 +108,7 @@ class DropProduct_Admin
         $this->dashboard_hook_suffix = add_submenu_page(
             'dropproduct',
             __('DropProduct Dashboard', 'dropproduct'),
-            '📊 ' . __('Dashboard', 'dropproduct'),
+            __('Dashboard', 'dropproduct'),
             'manage_woocommerce',
             'dropproduct-dashboard',
             array($this, 'render_dashboard_page')
@@ -118,7 +118,7 @@ class DropProduct_Admin
         $this->analytics_hook_suffix = add_submenu_page(
             'dropproduct',
             __('Sales Analytics', 'dropproduct'),
-            '📈 ' . __('Sales Analytics', 'dropproduct'),
+            __('Sales Analytics', 'dropproduct'),
             'manage_woocommerce',
             'dropproduct-analytics',
             array($this, 'render_analytics_page')
@@ -309,12 +309,31 @@ class DropProduct_Admin
             $categories = array();
         }
 
+        // Tax classes and shipping classes for free bulk editing (Pro injects its own via filter).
+        $tax_classes      = array();
+        $shipping_classes = array();
+        if (! defined('DROPPRODUCT_PRO_VERSION')) {
+            if (function_exists('wc_get_product_tax_class_options')) {
+                $tax_classes = wc_get_product_tax_class_options();
+            }
+            $shipping_terms = get_terms(array(
+                'taxonomy'   => 'product_shipping_class',
+                'hide_empty' => false,
+                'fields'     => 'id=>name',
+            ));
+            if (! is_wp_error($shipping_terms)) {
+                $shipping_classes = $shipping_terms;
+            }
+        }
+
         $localize_data = array(
-            'ajaxUrl'      => admin_url('admin-ajax.php'),
-            'nonce'        => wp_create_nonce('dropproduct_nonce'),
-            'categories'   => $categories,
-            'isProActive'  => defined('DROPPRODUCT_PRO_VERSION'),
-            'i18n'         => array(
+            'ajaxUrl'         => admin_url('admin-ajax.php'),
+            'nonce'           => wp_create_nonce('dropproduct_nonce'),
+            'categories'      => $categories,
+            'isProActive'     => defined('DROPPRODUCT_PRO_VERSION'),
+            'taxClasses'      => $tax_classes,
+            'shippingClasses' => $shipping_classes,
+            'i18n'            => array(
                 'dropzone'        => __('Drag & drop product images here, or click to browse', 'dropproduct'),
                 'uploading'       => __('Uploading…', 'dropproduct'),
                 'saving'          => __('Saving…', 'dropproduct'),
@@ -345,6 +364,24 @@ class DropProduct_Admin
         wp_localize_script('dropproduct-admin', 'dropProduct', $localize_data);
 
         wp_add_inline_script('dropproduct-admin', 'document.body.classList.add("dropproduct-page");', 'before');
+
+        // Bulk editing assets — only when Pro is not active (Pro uses its own via the filter/hook system).
+        if (! defined('DROPPRODUCT_PRO_VERSION')) {
+            wp_enqueue_style(
+                'dropproduct-bulk',
+                DROPPRODUCT_PLUGIN_URL . 'assets/css/admin-dropproduct-bulk.css',
+                array(),
+                DROPPRODUCT_VERSION
+            );
+
+            wp_enqueue_script(
+                'dropproduct-bulk',
+                DROPPRODUCT_PLUGIN_URL . 'assets/js/admin-dropproduct-bulk.js',
+                array('dropproduct-admin'),
+                DROPPRODUCT_VERSION,
+                true
+            );
+        }
     }
 
     /**
@@ -415,6 +452,29 @@ class DropProduct_Admin
         include DROPPRODUCT_PLUGIN_DIR . 'admin/views/analytics-page.php';
     }
 
+    /**
+     * Remove all third-party admin notices on DropProduct pages.
+     *
+     * Fires on `in_admin_header` (after menus are registered, before page content).
+     */
+    public function suppress_other_notices()
+    {
+        $screen = get_current_screen();
+
+        if ( ! $screen ) {
+            return;
+        }
+
+        if ( ! $this->is_dropproduct_page( $screen->id ) ) {
+            return;
+        }
+
+        remove_all_actions( 'admin_notices' );
+        remove_all_actions( 'all_admin_notices' );
+        remove_all_actions( 'user_admin_notices' );
+        remove_all_actions( 'network_admin_notices' );
+    }
+
     // ──────────────────────────────────────────
     //  Utility
     // ──────────────────────────────────────────
@@ -422,7 +482,10 @@ class DropProduct_Admin
     /**
      * Check if the current admin page is a DropProduct page.
      *
-     * @param string $hook_suffix Current admin hook suffix.
+     * Accepts both hook suffixes (from admin_enqueue_scripts) and screen IDs
+     * (from get_current_screen()->id, used by suppress_other_notices).
+     *
+     * @param string $hook_suffix Hook suffix or screen ID.
      * @return bool
      */
     private function is_dropproduct_page($hook_suffix)

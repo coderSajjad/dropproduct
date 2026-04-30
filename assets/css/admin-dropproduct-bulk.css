@@ -1,0 +1,177 @@
+/**
+ * DropProduct — Bulk Editing Styles
+ *
+ * Styles for the bulk actions bar and bulk prompt modal
+ * used when DropProduct Pro is not active.
+ *
+ * @package DropProduct
+ * @since   1.1.1
+ */
+
+/* ─── Bulk Actions Bar ──────────────────────────────── */
+.dropproduct-pro-bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--wu-primary-light) 0%, #e0e7ff 100%);
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    border-radius: var(--wu-radius-md);
+    margin-bottom: 16px;
+    animation: dropProductFadeIn 0.25s ease;
+}
+
+.dropproduct-pro-bulk-bar__left {
+    font-size: 13px;
+    color: var(--wu-gray-700);
+    font-weight: 500;
+}
+
+.dropproduct-pro-bulk-bar__left strong {
+    font-size: 16px;
+    color: var(--wu-primary);
+    font-weight: 700;
+}
+
+.dropproduct-pro-bulk-bar__right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dropproduct-pro-bulk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--wu-radius-sm);
+    transition: all var(--wu-transition);
+}
+
+.dropproduct-pro-bulk-btn:hover {
+    transform: translateY(-1px);
+}
+
+.dropproduct-pro-bulk-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* ─── Bulk Prompt Modal ─────────────────────────────── */
+.dropproduct-pro-prompt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    background: rgba(17, 24, 39, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.dropproduct-pro-prompt-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dropproduct-pro-prompt-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 99999;
+    width: 440px;
+    max-width: 90vw;
+    background: #fff;
+    border-radius: var(--wu-radius-lg);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.dropproduct-pro-prompt-modal.is-open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    visibility: visible;
+}
+
+.dropproduct-pro-prompt-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--wu-gray-100);
+}
+
+.dropproduct-pro-prompt-modal__header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wu-gray-800);
+}
+
+.dropproduct-pro-prompt-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--wu-gray-400);
+    padding: 6px;
+    border-radius: var(--wu-radius-sm);
+    transition: all var(--wu-transition);
+}
+
+.dropproduct-pro-prompt-close:hover {
+    color: var(--wu-danger);
+    background: var(--wu-danger-light);
+}
+
+.dropproduct-pro-prompt-modal__body {
+    padding: 24px;
+}
+
+.dropproduct-pro-prompt-modal__body label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wu-gray-700);
+}
+
+.dropproduct-pro-prompt-modal__body input[type="number"],
+.dropproduct-pro-prompt-modal__body select {
+    flex: 1;
+    min-width: 150px;
+    border-radius: var(--wu-radius-sm);
+}
+
+.dropproduct-pro-prompt-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--wu-gray-100);
+    background: var(--wu-gray-50);
+    border-radius: 0 0 var(--wu-radius-lg) var(--wu-radius-lg);
+}
+
+/* ─── Responsive ────────────────────────────────────── */
+@media screen and (max-width: 782px) {
+    .dropproduct-pro-bulk-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dropproduct-pro-prompt-modal {
+        width: 95vw;
+    }
+}

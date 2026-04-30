@@ -40,7 +40,6 @@ function dropproduct_dashboard_skeleton_rows( $rows, $cells ) {
     <!-- ═══ HEADER ═══════════════════════════════════════════ -->
     <div class="dpd-header">
         <div class="dpd-header__left">
-            <div class="dpd-header__icon">📊</div>
             <div>
                 <h1 class="dpd-header__title">
                     <?php esc_html_e( 'Store Dashboard', 'dropproduct' ); ?>

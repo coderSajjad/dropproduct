@@ -93,19 +93,38 @@ Upload 10, 50, or 100+ product images at once. Each image instantly becomes a dr
 * **Activity Log** — every checkout check is logged with IP, email, risk score, triggered rules, and final action
 * **Admin settings panel** — full control via DropProduct → 🛡️ Order Shield menu
 
+**📦 Bulk Editing**
+
+* Select multiple products and set price, category, stock status, tax class, or shipping class for all of them at once
+* Floating bulk bar appears when rows are selected — shows action buttons for each field
+* Clean prompt modal lets you choose the new value before applying
+
+**🔖 Session Management**
+
+* Upload sessions are tracked automatically — each batch of images is tagged with a unique session ID
+* Filter the product grid by session to work on one batch at a time
+* Session dropdown always shows the most recent 50 sessions
+
+**📋 Activity Log**
+
+* Full audit trail of all create, publish, delete, and edit actions
+* Filter by action type (upload, publish, delete, edit) and paginate through entries
+* Clear individual entries or wipe the entire log from the admin panel
+
+**🔍 SEO Tools**
+
+* Edit URL slugs, meta descriptions (Yoast + Rank Math compatible), and image ALT text inline
+* SEO fields update via AJAX — no page reload needed
+
 = ⭐ Pro Features =
 
-Unlock the full power of DropProduct with [DropProduct Pro](https://dropproduct.dev/pro):
+Unlock advanced power features with [DropProduct Pro](https://dropproduct.dev/pro):
 
-* **Bulk Editing** — Select multiple products and set price, category, stock, tax class, or shipping class for all of them at once
 * **Product Duplication** — Clone any product row with one click
 * **Validation Dashboard** — Pre-publish validation report with issue breakdown
 * **Variable Product Support** — Auto-detect color/size variations from filenames
 * **Advanced Grouping Engine** — Custom prefixes/suffixes for smarter image grouping
 * **Template Presets** — Default category, stock, tax class auto-applied to every new product
-* **Session Management** — Track upload sessions and rollback entire batches
-* **SEO Tools** — Edit URL slugs, meta descriptions (Yoast + Rank Math compatible), and image ALT text inline
-* **Activity Log** — Full audit trail of all create, publish, delete, and bulk edit actions
 * **Performance Controls** — Configurable batch size, safe mode, and auto-retry
 
 = 💡 Smart Image Naming Tips =
@@ -197,7 +216,7 @@ Combined release: includes the unreleased 1.0.1 and 1.0.2 feature sets.
 == Upgrade Notice ==
 
 = 1.1.0 =
-Major release: Sales Analytics adds a modern reporting dashboard for DropProduct sales performance, including charts, top products, geographic breakdowns, and CSV export, plus the Cost-to-Profit Tracker, Ultimate Order Shield, Price Slasher improvements, SEO Alt-Text Automator, Pro feature lock popup, and publish/delete workflow upgrades.
+Major release: Sales Analytics adds a modern reporting dashboard for DropProduct sales performance, including charts, top products, geographic breakdowns, and CSV export, plus the Cost-to-Profit Tracker, Ultimate Order Shield, Price Slasher improvements, SEO Alt-Text Automator, and publish/delete workflow upgrades.
 
 = 1.0.0 =
 Initial release of DropProduct.

@@ -112,62 +112,6 @@ $is_pro   = defined( 'DROPPRODUCT_PRO_VERSION' );
 			</div>
 		</div>
 
-		<?php if ( ! $is_pro ) : ?>
-		<!-- ── Pro upsell card ───────────────────────────────── -->
-		<div class="dropproduct-settings-card dropproduct-settings-card--pro">
-			<div class="dropproduct-settings-card__header">
-				<div class="dropproduct-settings-card__icon dropproduct-settings-card__icon--pro">
-					<span class="dashicons dashicons-star-filled"></span>
-				</div>
-				<div>
-					<h2 class="dropproduct-settings-card__title">
-						<?php esc_html_e( 'Unlock More with DropProduct Pro', 'dropproduct' ); ?>
-					</h2>
-					<p class="dropproduct-settings-card__desc">
-						<?php esc_html_e( 'Advanced grouping, bulk editing, session management, activity log, SEO slug editor, variable products, presets, and more.', 'dropproduct' ); ?>
-					</p>
-				</div>
-			</div>
-			<div class="dropproduct-settings-card__body">
-				<div class="dropproduct-settings-pro-features">
-					<div class="dropproduct-settings-pro-feature">
-						<span class="dashicons dashicons-list-view"></span>
-						<?php esc_html_e( 'Bulk Editing', 'dropproduct' ); ?>
-					</div>
-					<div class="dropproduct-settings-pro-feature">
-						<span class="dashicons dashicons-backup"></span>
-						<?php esc_html_e( 'Session Management', 'dropproduct' ); ?>
-					</div>
-					<div class="dropproduct-settings-pro-feature">
-						<span class="dashicons dashicons-chart-area"></span>
-						<?php esc_html_e( 'Activity Log', 'dropproduct' ); ?>
-					</div>
-					<div class="dropproduct-settings-pro-feature">
-						<span class="dashicons dashicons-search"></span>
-						<?php esc_html_e( 'SEO Tools', 'dropproduct' ); ?>
-					</div>
-					<div class="dropproduct-settings-pro-feature">
-						<span class="dashicons dashicons-admin-settings"></span>
-						<?php esc_html_e( 'Template Presets', 'dropproduct' ); ?>
-					</div>
-					<div class="dropproduct-settings-pro-feature">
-						<span class="dashicons dashicons-products"></span>
-						<?php esc_html_e( 'Variable Products', 'dropproduct' ); ?>
-					</div>
-				</div>
-				<a
-					href="https://wordpress.org/plugins/dropproduct-pro/"
-					target="_blank"
-					class="button dropproduct-settings-upgrade-btn"
-					id="dropproduct-settings-upgrade-btn"
-				>
-					<span class="dashicons dashicons-star-filled"></span>
-					<?php esc_html_e( 'Upgrade to Pro', 'dropproduct' ); ?>
-				</a>
-			</div>
-		</div>
-		<?php endif; ?>
-
 	</div><!-- /.dropproduct-settings-body -->
 
 	<!-- Save button -->

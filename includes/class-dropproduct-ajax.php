@@ -640,4 +640,154 @@ class DropProduct_Ajax
 
         return sanitize_text_field($name);
     }
+
+    // ──────────────────────────────────────────
+    //  Bulk Editing
+    // ──────────────────────────────────────────
+
+    /**
+     * Bulk-update a single field across multiple products.
+     *
+     * @since 1.2.0
+     */
+    public function handle_bulk_update()
+    {
+        $this->verify_request();
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above.
+        $product_ids = isset( $_POST['product_ids'] ) ? array_map( 'absint', (array) $_POST['product_ids'] ) : array();
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $field = isset( $_POST['field'] ) ? sanitize_text_field( wp_unslash( $_POST['field'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $value = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
+
+        if ( empty( $product_ids ) || empty( $field ) ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid request.', 'dropproduct' ) ) );
+        }
+
+        $updated = 0;
+        $failed  = 0;
+
+        foreach ( $product_ids as $product_id ) {
+            $product = wc_get_product( $product_id );
+
+            if ( ! $product ) {
+                $failed++;
+                continue;
+            }
+
+            switch ( $field ) {
+                case 'regular_price':
+                    $product->set_regular_price( wc_format_decimal( $value ) );
+                    break;
+
+                case 'category':
+                    $term_id = absint( $value );
+                    $product->set_category_ids( $term_id ? array( $term_id ) : array() );
+                    break;
+
+                case 'stock_status':
+                    $allowed = array( 'instock', 'outofstock', 'onbackorder' );
+                    if ( in_array( $value, $allowed, true ) ) {
+                        $product->set_stock_status( $value );
+                    }
+                    break;
+
+                case 'tax_class':
+                    $product->set_tax_class( $value );
+                    break;
+
+                case 'shipping_class':
+                    $product->set_shipping_class_id( absint( $value ) );
+                    break;
+
+                default:
+                    $failed++;
+                    continue 2;
+            }
+
+            $product->save();
+            $updated++;
+        }
+
+        wp_send_json_success( array( 'updated' => $updated, 'failed' => $failed ) );
+    }
+
+    /**
+     * Duplicate a product row (creates a draft copy).
+     *
+     * @since 1.2.0
+     */
+    public function handle_duplicate_product()
+    {
+        $this->verify_request();
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above.
+        $product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+
+        if ( ! $product_id ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid product ID.', 'dropproduct' ) ) );
+        }
+
+        $source = wc_get_product( $product_id );
+
+        if ( ! $source ) {
+            wp_send_json_error( array( 'message' => __( 'Product not found.', 'dropproduct' ) ) );
+        }
+
+        $new = clone $source;
+        $new->set_id( 0 );
+        /* translators: appended to a duplicated product title */
+        $new->set_name( $source->get_name() . ' ' . __( '(Copy)', 'dropproduct' ) );
+        $new->set_status( 'draft' );
+        $new->set_sku( '' );
+        $new->add_meta_data( '_dropproduct_product', '1', true );
+        $new->save();
+
+        $data = $this->product_service->format_product_data( $new );
+
+        wp_send_json_success( array( 'product' => $data ) );
+    }
+
+    // ──────────────────────────────────────────
+    //  SEO Tools
+    // ──────────────────────────────────────────
+
+    /**
+     * Handle SEO field updates hooked to `dropproduct_update_custom_field`.
+     *
+     * Supports: slug, meta_description (Yoast + Rank Math), alt_text.
+     *
+     * @since 1.2.0
+     * @param WC_Product $product Product being updated.
+     * @param string     $field   Field name.
+     * @param mixed      $value   New value.
+     */
+    public function handle_custom_field_update( $product, $field, $value )
+    {
+        $seo_fields = array( 'slug', 'meta_description', 'alt_text' );
+
+        if ( ! in_array( $field, $seo_fields, true ) ) {
+            return;
+        }
+
+        switch ( $field ) {
+            case 'slug':
+                $product->set_slug( sanitize_title( $value ) );
+                $product->save();
+                break;
+
+            case 'meta_description':
+                update_post_meta( $product->get_id(), '_yoast_wpseo_metadesc', sanitize_text_field( $value ) );
+                update_post_meta( $product->get_id(), 'rank_math_description', sanitize_text_field( $value ) );
+                break;
+
+            case 'alt_text':
+                $image_id = $product->get_image_id();
+                if ( $image_id ) {
+                    update_post_meta( $image_id, '_wp_attachment_image_alt', sanitize_text_field( $value ) );
+                }
+                break;
+        }
+    }
 }

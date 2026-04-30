@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: DropProduct – Bulk Product Uploader for WooCommerce
+ * Plugin Name: DropProduct
  * Plugin URI:  https://wordpress.org/plugins/dropproduct/
  * Description: The fastest way to bulk create WooCommerce products from images with drag & drop, smart grouping, inline editing, and one-click publish.
  * Version:     1.1.0
