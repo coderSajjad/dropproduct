@@ -8,7 +8,7 @@ Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Bulk create WooCommerce products from images. Drag & drop, inline editing, one-click publish — now with fraud protection, financial insights, bulk price tools, and a modern Sales Analytics dashboard.
+DropProduct is a WooCommerce bulk product uploader that instantly creates draft products from image uploads — drag & drop multiple images, auto-generate titles, group galleries, edit inline, and publish in one click. Powerful built-in tools include real-time cost-to-profit tracking, bulk price adjustments, a Sales Analytics dashboard with CSV export, and a rule-based Order Shield for fraud protection.
 
 == Description ==
 
