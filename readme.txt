@@ -2,9 +2,9 @@
 Contributors: codersajjad
 Tags: woocommerce, bulk product upload, product creator, drag drop upload, woocommerce bulk edit, fraud protection, anti-fraud
 Requires at least: 5.8
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,21 @@ Yes. DropProduct is fully compatible with WooCommerce High-Performance Order Sto
 No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin page**.
 
 == Changelog ==
+
+= 1.1.1 =
+Maintenance release: small fixes and improvements.
+
+**Fixes**
+
+* Resolved an edge-case where Price Slasher could clear price fields after bulk apply.
+* Fixed CSV export encoding for Sales Analytics to ensure UTF-8 compatibility.
+* Minor UI tweaks and accessibility improvements in the admin grid and modals.
+* Updated capability checks and sanitization for improved security.
+
+**Improvements**
+
+* Optimized AJAX response payloads to reduce admin page load time.
+* Prepared translations for recent strings.
 
 = 1.1.0 =
 Combined release: includes the unreleased 1.0.1 and 1.0.2 feature sets.

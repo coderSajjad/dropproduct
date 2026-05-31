@@ -676,6 +676,11 @@ class DropProduct_Ajax
                 continue;
             }
 
+            if ( ! $this->product_service->is_managed_product( $product_id ) ) {
+                $failed++;
+                continue;
+            }
+
             switch ( $field ) {
                 case 'regular_price':
                     $product->set_regular_price( wc_format_decimal( $value ) );
@@ -733,6 +738,10 @@ class DropProduct_Ajax
 
         if ( ! $source ) {
             wp_send_json_error( array( 'message' => __( 'Product not found.', 'dropproduct' ) ) );
+        }
+
+        if ( ! $this->product_service->is_managed_product( $product_id ) ) {
+            wp_send_json_error( array( 'message' => __( 'This product is not managed by DropProduct.', 'dropproduct' ) ) );
         }
 
         $new = clone $source;

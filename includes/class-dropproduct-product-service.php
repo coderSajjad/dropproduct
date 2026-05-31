@@ -30,6 +30,17 @@ class DropProduct_Product_Service
     const META_KEY = '_dropproduct_product';
 
     /**
+     * Check whether a product was created by DropProduct.
+     *
+     * @param int $product_id Product ID.
+     * @return bool
+     */
+    public function is_managed_product( $product_id )
+    {
+        return '1' === get_post_meta( absint( $product_id ), self::META_KEY, true );
+    }
+
+    /**
      * Create a draft simple product from grouped image data.
      *
      * @param string $title             Product title.
@@ -106,6 +117,10 @@ class DropProduct_Product_Service
 
         if (! $product) {
             return new WP_Error('invalid_product', __('Product not found.', 'dropproduct'));
+        }
+
+        if ( ! $this->is_managed_product( $product_id ) ) {
+            return new WP_Error( 'forbidden_product', __( 'This product is not managed by DropProduct.', 'dropproduct' ) );
         }
 
         switch ($field) {
@@ -188,6 +203,10 @@ class DropProduct_Product_Service
             return new WP_Error('invalid_product', __('Product not found.', 'dropproduct'));
         }
 
+        if ( ! $this->is_managed_product( $product_id ) ) {
+            return new WP_Error( 'forbidden_product', __( 'This product is not managed by DropProduct.', 'dropproduct' ) );
+        }
+
         $errors = $this->validate_for_publish($product);
 
         if (! empty($errors)) {
@@ -221,6 +240,10 @@ class DropProduct_Product_Service
 
         if (! $product) {
             return new WP_Error('invalid_product', __('Product not found.', 'dropproduct'));
+        }
+
+        if ( ! $this->is_managed_product( $product_id ) ) {
+            return new WP_Error( 'forbidden_product', __( 'This product is not managed by DropProduct.', 'dropproduct' ) );
         }
 
         $product->delete($force);
