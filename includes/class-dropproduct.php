@@ -130,8 +130,14 @@ class DropProduct
         $GLOBALS['dropproduct_fraud_logger_instance'] = $fraud_logger;
         $GLOBALS['dropproduct_fraud_shield_instance'] = $fraud_shield;
 
-        // Register front-end WC hooks (only when WC is active).
-        add_action('woocommerce_loaded', array($fraud_shield, 'register_hooks'));
+        // Register WC + admin hooks. If WooCommerce already finished loading
+        // (plugin load order can put us after it), run immediately instead of
+        // waiting for an action that will never fire again.
+        if ( did_action( 'woocommerce_loaded' ) ) {
+            $fraud_shield->register_hooks();
+        } else {
+            add_action( 'woocommerce_loaded', array( $fraud_shield, 'register_hooks' ) );
+        }
     }
 
     /**
@@ -158,9 +164,12 @@ class DropProduct
      */
     private function define_analytics_hooks()
     {
-        $analytics = new DropProduct_Analytics();
-
         $this->loader->add_action('wp_ajax_dropproduct_get_analytics', $this, 'ajax_get_analytics');
+
+        // Keep the cached product ID list in step with the catalogue.
+        $this->loader->add_action('dropproduct_after_create_product',  'DropProduct_Analytics', 'flush_ids_cache');
+        $this->loader->add_action('dropproduct_after_publish_product', 'DropProduct_Analytics', 'flush_ids_cache');
+        $this->loader->add_action('dropproduct_after_delete_product',  'DropProduct_Analytics', 'flush_ids_cache');
     }
 
     /**

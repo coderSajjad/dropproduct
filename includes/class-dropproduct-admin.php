@@ -263,10 +263,12 @@ class DropProduct_Admin
 
         // Analytics page assets.
         if ($hook_suffix === $this->analytics_hook_suffix) {
-            // Enqueue Chart.js library.
+            // Chart.js is bundled locally — wp.org forbids loading code from a
+            // remote host, and a CDN would break offline/intranet installs and
+            // leak admin IP addresses to a third party.
             wp_enqueue_script(
-                'chart-js',
-                'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js',
+                'dropproduct-chartjs',
+                DROPPRODUCT_PLUGIN_URL . 'assets/vendor/chart.min.js',
                 array(),
                 '3.9.1',
                 true
@@ -282,7 +284,7 @@ class DropProduct_Admin
             wp_enqueue_script(
                 'dropproduct-analytics',
                 DROPPRODUCT_PLUGIN_URL . 'assets/js/admin-analytics.js',
-                array('jquery', 'chart-js'),
+                array('jquery', 'dropproduct-chartjs'),
                 DROPPRODUCT_VERSION,
                 true
             );
@@ -461,7 +463,48 @@ class DropProduct_Admin
     }
 
     /**
-     * Remove all third-party admin notices on DropProduct pages.
+     * WordPress core notice callbacks that are always allowed through.
+     *
+     * These carry information a store owner must not miss — a pending core
+     * update, maintenance mode left on, paused plugins after a fatal, recovery
+     * mode, the default-password nag. Third-party marketing, review prompts and
+     * license nags are what get filtered out.
+     *
+     * @since 1.2.0
+     * @var array
+     */
+    private $core_notice_callbacks = array(
+        'update_nag',
+        'maintenance_nag',
+        'deactivated_plugins_notice',
+        'paused_plugins_notice',
+        'paused_themes_notice',
+        'wp_recovery_mode_nag',
+        'site_admin_notice',
+        'default_password_nag',
+        'new_user_email_admin_notice',
+        'WP_Privacy_Policy_Content::notice',
+        'WP_Privacy_Policy_Content::policy_text_changed_notice',
+    );
+
+    /**
+     * Hide third-party admin notices on DropProduct pages.
+     *
+     * Plugin and theme notices make a focused workspace unusable — the upload
+     * grid gets pushed below a stack of unrelated license and review prompts.
+     *
+     * History: earlier drafts of this method called remove_all_actions() on
+     * every notice hook, which also swallowed WordPress's own update and
+     * security warnings. A later draft replaced that with a collapsible tray,
+     * but the tray never worked:
+     * core's common.js selects `div.notice` and relocates every match to just
+     * after the page heading, lifting the notices straight back out of the
+     * wrapper. The result was worse than either previous behaviour — notices
+     * displayed in full, and no way to collapse them.
+     *
+     * The approach now is to unhook the callbacks that produce third-party
+     * notices while leaving core's own on the hook, so nothing important is
+     * hidden and nothing depends on where the browser ends up moving markup.
      *
      * Fires on `in_admin_header` (after menus are registered, before page content).
      */
@@ -477,10 +520,90 @@ class DropProduct_Admin
             return;
         }
 
-        remove_all_actions( 'admin_notices' );
-        remove_all_actions( 'all_admin_notices' );
-        remove_all_actions( 'user_admin_notices' );
-        remove_all_actions( 'network_admin_notices' );
+        /**
+         * Filter whether DropProduct hides other plugins' admin notices.
+         *
+         * Return false to leave every notice in place.
+         *
+         * @since 1.2.0
+         * @param bool      $suppress Whether to hide third-party notices. Default true.
+         * @param WP_Screen $screen   Current screen.
+         */
+        if ( ! apply_filters( 'dropproduct_suppress_admin_notices', true, $screen ) ) {
+            return;
+        }
+
+        foreach ( array( 'admin_notices', 'all_admin_notices', 'user_admin_notices', 'network_admin_notices' ) as $hook ) {
+            $this->strip_third_party_notices( $hook );
+        }
+    }
+
+    /**
+     * Remove non-core callbacks from a notice hook.
+     *
+     * @since 1.2.0
+     * @param string $hook Notice hook name.
+     */
+    private function strip_third_party_notices( $hook )
+    {
+        global $wp_filter;
+
+        if ( empty( $wp_filter[ $hook ] ) || ! ( $wp_filter[ $hook ] instanceof WP_Hook ) ) {
+            return;
+        }
+
+        /**
+         * Filter the callbacks preserved on DropProduct pages.
+         *
+         * Add an entry to keep a specific notice visible. Function callbacks are
+         * matched by name ("update_nag"); methods by "Class::method".
+         *
+         * @since 1.2.0
+         * @param array  $allowed Callback identifiers to keep.
+         * @param string $hook    The notice hook being filtered.
+         */
+        $allowed = (array) apply_filters(
+            'dropproduct_allowed_admin_notices',
+            $this->core_notice_callbacks,
+            $hook
+        );
+
+        foreach ( $wp_filter[ $hook ]->callbacks as $priority => $callbacks ) {
+            foreach ( $callbacks as $handle => $registered ) {
+                if ( in_array( $this->callback_identifier( $registered['function'] ), $allowed, true ) ) {
+                    continue;
+                }
+
+                unset( $wp_filter[ $hook ]->callbacks[ $priority ][ $handle ] );
+            }
+
+            if ( empty( $wp_filter[ $hook ]->callbacks[ $priority ] ) ) {
+                unset( $wp_filter[ $hook ]->callbacks[ $priority ] );
+            }
+        }
+    }
+
+    /**
+     * Build a stable, comparable identifier for a registered callback.
+     *
+     * @since 1.2.0
+     * @param mixed $callback Anything add_action() accepts.
+     * @return string "function", "Class::method", or '' for closures.
+     */
+    private function callback_identifier( $callback )
+    {
+        if ( is_string( $callback ) ) {
+            return $callback;
+        }
+
+        if ( is_array( $callback ) && isset( $callback[0], $callback[1] ) ) {
+            $class = is_object( $callback[0] ) ? get_class( $callback[0] ) : (string) $callback[0];
+            return $class . '::' . $callback[1];
+        }
+
+        // Closures and invokable objects cannot be identified by name; they are
+        // effectively always third-party, so they get removed.
+        return '';
     }
 
     // ──────────────────────────────────────────

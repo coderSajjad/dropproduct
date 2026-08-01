@@ -232,10 +232,19 @@ class DropProduct_Ajax
         }
 
         $updated = array();
+        $skipped = 0;
 
         foreach ($product_ids as $product_id) {
             $product = wc_get_product($product_id);
             if (! $product) {
+                continue;
+            }
+
+            // Every other write handler scopes itself to DropProduct-managed
+            // products; this one did not, so a posted ID could rewrite prices on
+            // any product in the catalogue.
+            if (! $this->product_service->is_managed_product($product_id)) {
+                $skipped++;
                 continue;
             }
 
@@ -297,6 +306,7 @@ class DropProduct_Ajax
         wp_send_json_success(array(
             'updated' => $updated,
             'count'   => count($updated),
+            'skipped' => $skipped,
         ));
     }
 

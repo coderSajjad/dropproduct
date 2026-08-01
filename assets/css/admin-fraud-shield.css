@@ -876,3 +876,14 @@
 		display: none;
 	}
 }
+
+/* Inline informational notice inside a settings card. */
+.dpshield-inline-notice {
+	padding: 12px 14px;
+	border-radius: 6px;
+	border-left: 3px solid #2271b1;
+	background: #f0f6fc;
+	color: #1d2327;
+	font-size: 13px;
+	line-height: 1.6;
+}

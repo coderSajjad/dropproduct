@@ -156,6 +156,20 @@ class DropProduct_Product_Service
                 }
                 break;
 
+            case 'stock_quantity':
+                // An empty value turns stock management off again.
+                if ('' === trim((string) $value)) {
+                    $product->set_manage_stock(false);
+                    $product->set_stock_quantity(null);
+                } else {
+                    $qty = max(0, (int) $value);
+                    $product->set_manage_stock(true);
+                    $product->set_stock_quantity($qty);
+                    // Keep the status column consistent with the quantity.
+                    $product->set_stock_status($qty > 0 ? 'instock' : 'outofstock');
+                }
+                break;
+
             case 'category':
                 $term_id = absint($value);
                 if ($term_id) {
@@ -260,6 +274,15 @@ class DropProduct_Product_Service
     }
 
     /**
+     * Default maximum number of products loaded into the editing grid.
+     *
+     * Previously this query was unbounded, so a store that had created
+     * thousands of products through DropProduct would try to hydrate every one
+     * of them into WC_Product objects on a single AJAX request.
+     */
+    const GRID_LIMIT = 200;
+
+    /**
      * Retrieve draft/published products created by DropProduct.
      *
      * @param string $session_id Optional session ID to filter by. Empty = all.
@@ -283,9 +306,20 @@ class DropProduct_Product_Service
         }
         // phpcs:enable
 
+        /**
+         * Filter how many products the editing grid loads at once.
+         *
+         * Return -1 to restore the old unbounded behaviour.
+         *
+         * @since 1.2.0
+         * @param int    $limit      Maximum products to load.
+         * @param string $session_id Session filter in effect, or ''.
+         */
+        $limit = (int) apply_filters( 'dropproduct_grid_limit', self::GRID_LIMIT, $session_id );
+
         $products = wc_get_products(array(
             'status'     => array( 'draft', 'publish' ),
-            'limit'      => -1,
+            'limit'      => $limit,
             'orderby'    => 'date',
             'order'      => 'DESC',
             'meta_query' => $meta_query,
@@ -323,6 +357,8 @@ class DropProduct_Product_Service
             'sale_price'        => $product->get_sale_price(),
             'sku'               => $product->get_sku(),
             'stock_status'      => $product->get_stock_status(),
+            // Null when stock management is off — the grid renders that as blank.
+            'stock_quantity'    => $product->get_manage_stock() ? $product->get_stock_quantity() : '',
             'category_id'       => $category_id,
             'image_thumb'       => $image_url,
             'image_full'        => $image_full,

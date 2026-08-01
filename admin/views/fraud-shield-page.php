@@ -38,6 +38,18 @@ $total_pages   = (int) ceil( $log_total / $per_page );
 
 $active_tab    = in_array( $_GET['tab'] ?? '', array( 'settings', 'logs' ), true )
     ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'settings';
+
+// The honeypot and checkout-timer rules need fields injected into the classic
+// checkout form, which the block-based Checkout does not render. Every other
+// rule works on both. Detect it so we can say so plainly rather than let the
+// merchant assume all nine rules are running.
+$dpshield_uses_blocks = false;
+if ( class_exists( 'WC_Blocks_Utils' ) && function_exists( 'wc_get_page_id' ) ) {
+    $dpshield_checkout_page = wc_get_page_id( 'checkout' );
+    if ( $dpshield_checkout_page > 0 ) {
+        $dpshield_uses_blocks = WC_Blocks_Utils::has_block_in_page( $dpshield_checkout_page, 'woocommerce/checkout' );
+    }
+}
 ?>
 <div class="dpshield-wrap">
 
@@ -219,6 +231,13 @@ $active_tab    = in_array( $_GET['tab'] ?? '', array( 'settings', 'logs' ), true
                         <?php endforeach; ?>
                     </div>
 
+                    <?php if ( $dpshield_uses_blocks ) : ?>
+                    <div class="dpshield-inline-notice" style="margin-top:16px;">
+                        <strong><?php esc_html_e( 'Your checkout uses the WooCommerce Checkout block.', 'dropproduct' ); ?></strong><br>
+                        <?php esc_html_e( 'All rules above are active except two: “Honeypot field triggered” and “Checkout completed too fast”. Both rely on hidden fields that only the classic (shortcode) checkout renders. Every other rule — blacklist, disposable email, IP velocity, repeated contact, country mismatch, failed payments and card testing — runs normally on the block checkout.', 'dropproduct' ); ?>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="dpshield-field-row" style="margin-top:24px;">
                         <div class="dpshield-field">
                             <label class="dpshield-field__label" for="dpshield-max-orders-per-ip"><?php esc_html_e( 'Max Orders Per IP / Hour', 'dropproduct' ); ?></label>
@@ -315,6 +334,40 @@ $active_tab    = in_array( $_GET['tab'] ?? '', array( 'settings', 'logs' ), true
                 <div class="dpshield-card__body">
                     <textarea name="blacklist" id="dpshield-blacklist"
                               class="dpshield-textarea" rows="8" placeholder="John Doe&#10;+1234567890&#10;fraud@example.com"><?php echo esc_textarea( $cfg['blacklist'] ); ?></textarea>
+                </div>
+            </div>
+
+            <!-- ── Network / Proxy ── -->
+            <div class="dpshield-card">
+                <div class="dpshield-card__head">
+                    <h2><?php esc_html_e( 'Network & Proxy', 'dropproduct' ); ?></h2>
+                    <p><?php esc_html_e( 'Controls how Order Shield determines a visitor\'s IP address. Every IP-based rule depends on this.', 'dropproduct' ); ?></p>
+                </div>
+                <div class="dpshield-card__body">
+
+                    <div class="dpshield-field dpshield-field--toggle">
+                        <label class="dpshield-toggle-switch">
+                            <input type="checkbox" name="trust_proxy_headers" id="dpshield-trust-proxy" <?php checked( ! empty( $cfg['trust_proxy_headers'] ) ); ?> />
+                            <span class="dpshield-toggle-switch__slider"></span>
+                        </label>
+                        <div>
+                            <span class="dpshield-field__label"><?php esc_html_e( 'This store is behind a reverse proxy or CDN', 'dropproduct' ); ?></span>
+                            <span class="dpshield-field__hint">
+                                <?php esc_html_e( 'Only enable this if traffic reaches your store through Cloudflare, a load balancer, or a managed host proxy. When enabled, Order Shield reads the visitor IP from forwarded headers. Leaving it on for a store that is NOT behind a proxy lets visitors spoof their own IP and bypass every IP-based rule.', 'dropproduct' ); ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="dpshield-field" id="dpshield-trusted-proxies-field" style="margin-top:16px; <?php echo empty( $cfg['trust_proxy_headers'] ) ? 'opacity:.4;pointer-events:none;' : ''; ?>">
+                        <label class="dpshield-field__label" for="dpshield-trusted-proxies"><?php esc_html_e( 'Trusted proxy addresses', 'dropproduct' ); ?></label>
+                        <span class="dpshield-field__hint">
+                            <?php esc_html_e( 'One IP address or CIDR range per line (for example 173.245.48.0/20). Forwarded headers are only trusted when the connection comes from one of these. Leave empty to trust any proxy — safe only when your origin server is firewalled so that nothing but the CDN can reach it.', 'dropproduct' ); ?>
+                        </span>
+                        <textarea name="trusted_proxies" id="dpshield-trusted-proxies"
+                                  class="dpshield-textarea" rows="5"
+                                  placeholder="173.245.48.0/20&#10;103.21.244.0/22&#10;2400:cb00::/32"><?php echo esc_textarea( isset( $cfg['trusted_proxies'] ) ? $cfg['trusted_proxies'] : '' ); ?></textarea>
+                    </div>
+
                 </div>
             </div>
 

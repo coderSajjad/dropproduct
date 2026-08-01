@@ -2,9 +2,9 @@
 Contributors: codersajjad
 Tags: woocommerce, bulk product upload, product creator, drag drop upload, woocommerce bulk edit, fraud protection, anti-fraud
 Requires at least: 5.8
-Tested up to: 7.0
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -176,6 +176,79 @@ No. DropProduct loads its CSS and JavaScript **only on the DropProduct admin pag
 
 == Changelog ==
 
+= 1.2.0 =
+Major stability, security, and correctness release. Two headline features — Sales Analytics and Order Shield — were not working as described on modern WooCommerce stores; both are now fixed and verified against a live HPOS store with the block-based checkout. No feature removals — everything that worked before still works the same way.
+
+**Sales Analytics now works at all**
+
+* **Every analytics query was invalid and always had been.** The reports selected `product_id`, `quantity` and `total` from `wc_woocommerce_order_items`, a table which has none of those columns — it holds only `order_item_id`, `order_item_name`, `order_item_type` and `order_id`. Every query raised a MySQL error, every result came back empty, and the dashboard reported zero sales on every install since the feature shipped in 1.1.0.
+* **Rebuilt on WooCommerce's reporting lookup tables** (`wc_order_product_lookup`, `wc_order_stats`, `wc_customer_lookup`). These are indexed and pre-aggregated, so reports are also considerably faster than the original design would have been.
+* **Added an automatic fallback** for stores where those tables are absent or not yet backfilled (WooCommerce Analytics disabled, or a fresh install before the scheduler runs). The fallback aggregates order line items through `wc_get_orders()` in a single pass. The response now includes a `data_source` field indicating which path produced the figures.
+* **Revenue is no longer double-counted.** The old query multiplied the line total by the quantity, but a line total already accounts for quantity — so even if the query had run, a 3 × $75 line would have reported $675 instead of $225.
+* **Date ranges now use site time, not server time.** Ranges were built with PHP's `date()`, which ignores the WordPress timezone, so on many hosts the reporting window was shifted by hours against every other date shown in WooCommerce.
+* **Removed fabricated sample data.** "Sales by Channel", the device breakdown, and the conversion rate were hardcoded example figures shown to users as if they were their own store's numbers — one set of percentages even summed to 110%. WooCommerce does not record referral channel, device type, or impressions, so these widgets now show an honest empty state, and the conversion rate reads "—". Add-ons can supply real data through the new `dropproduct_analytics_sales_by_channel` and `dropproduct_analytics_conversion_metrics` filters.
+* **Fixed a crash in the Analytics summary when a store has no DropProduct products.** Missing growth values produced `NaN` in the KPI cards.
+
+**Order Shield now runs on the modern checkout, and no longer leaks IP-based rules**
+
+* **The shield was completely inert on the block-based Checkout** — the WooCommerce default since 8.3. It hooked only `woocommerce_checkout_process` and `woocommerce_checkout_before_customer_details`, neither of which the Checkout block fires. Not a single rule was evaluated, while the admin screen continued to display "🛡 Protected". Order Shield now hooks the Store API equivalents, so blacklist, disposable email, IP velocity, repeated contact, IP/country mismatch, failed payments and card-testing detection all apply to block checkouts. Blocked orders are rejected with a proper Store API error.
+* **The honeypot and checkout-speed rules cannot run on the block checkout** — both depend on hidden fields only the classic form renders. Rather than let this be silently misleading, the Order Shield settings screen now detects a block-based checkout and states plainly which two rules are inactive and which seven are running.
+* **The plugin declared HPOS compatibility it did not have.** Under High-Performance Order Storage, orders move out of `wp_posts`/`wp_postmeta` into dedicated tables, but Order Shield still queried `post_type = 'shop_order'` and `_billing_email` / `_customer_ip_address` post meta directly. Those queries matched nothing, so the **IP velocity** and **repeated phone/email** rules silently never fired on any HPOS store. All order lookups now go through `wc_get_orders()`, which routes to whichever data store is active.
+* **Visitor IP addresses could be spoofed to defeat every IP-based rule.** `X-Forwarded-For`, `Client-IP` and `CF-Connecting-IP` are supplied by the client and were trusted unconditionally. An attacker could send a different value on each request to walk past IP velocity limits, failed-payment counting and the COD restriction — or reuse someone else's address to inflate their counters and get them blocked. Forwarded headers are now only honoured when the store is explicitly configured as sitting behind a reverse proxy, and only when the connecting address matches the trusted-proxy allowlist. New "Network & Proxy" settings section, disabled by default, with an optional allowlist of proxy IPs and CIDR ranges (IPv4 and IPv6).
+* **Order Shield could permanently lock itself out of its own settings screen.** The admin AJAX endpoints were registered inside the "is the shield enabled?" check, so saving the shield as disabled removed the very endpoint needed to switch it back on. The settings form is no longer recoverable only via a database edit.
+* **"Hold suspicious orders" mode now actually holds orders.** The logic ran on `woocommerce_checkout_create_order`, before the order had an ID — so the on-hold status was overwritten by the payment gateway moments later, and the explanatory order notes were silently discarded. It now runs on `woocommerce_checkout_order_processed`, where the order is saved. Flagged orders are held, and the risk score and triggered rules are recorded as private order notes.
+* **Cash-on-Delivery restriction now applies on block checkouts too.** It was gated behind `is_checkout()`, which is always false during a Store API request.
+* Scoring, thresholds and action mode are now shared by both checkout types through a single decision path, so the two can no longer drift apart.
+* The Dashboard no longer reports Order Shield as inactive when it is running — it was reading a settings key that never existed.
+
+**Other security & correctness fixes**
+
+* **Bulk Price Adjuster now respects product ownership.** Every other write endpoint already limited itself to DropProduct-managed products; the price adjuster did not, so a crafted request could rewrite prices on any product in the catalogue. It now skips unmanaged products and reports how many were skipped.
+* **CSV export hardened against formula injection.** Product and country names beginning with `=`, `+`, `-`, `@`, TAB or CR are now neutralised, so a malicious product title can no longer execute when the exported report is opened in Excel, LibreOffice, or Google Sheets. Fields are now properly quoted and escaped, and a UTF-8 BOM is added so accented product names open correctly.
+* **Removed the double-`prepare()` in the Activity Log query.** A prepared fragment was being nested inside a second `prepare()` call, which double-escapes and triggers `_doing_it_wrong()` on WordPress 6.2+. Each query is now prepared exactly once.
+* **Chart.js is now bundled with the plugin** instead of loaded from a public CDN. This removes a third-party supply-chain dependency, stops admin IP addresses being sent to an external host (GDPR), and lets the Analytics page work on offline and intranet installs.
+* **Stock quantity is now saved when edited in the grid.** The field posted `stock_quantity`, which the server had no handler for, so the value was silently dropped while the UI still flashed "Saved". Editing it now enables stock management, stores the quantity, and keeps the stock status column in sync.
+* **Fixed double-escaped text on the Dashboard.** Customer names, product titles, and emails were escaped on the server and again in JavaScript, so names appeared as `O&amp;#039;Brien`. Escaping now happens once, at the point of output.
+
+**Onboarding: WooCommerce dependency notice**
+
+* **DropProduct now explains itself instead of failing quietly.** Activating DropProduct without WooCommerce previously showed a bare red error reading "DropProduct requires WooCommerce to be installed and active" — on every admin page, with no way to act on it and no way to dismiss it. It now shows a single soft notice with a one-click button that resolves the problem.
+* **The notice knows which of four situations you are actually in** and adapts:
+    * WooCommerce not installed → **Install WooCommerce**
+    * Installed but deactivated → **Activate WooCommerce**
+    * Active but older than the required 6.0 → **Update WooCommerce**
+    * Active and supported → no notice; the plugin simply runs.
+* **A "Remind me later" option** hides the notice for a week. It always reappears on the Plugins screen, so it can never be lost entirely. Duration is filterable via `dropproduct_wc_notice_snooze_period`.
+* **A corrective link is added to DropProduct's own row on the Plugins screen**, since that is where people land after activating and finding no DropProduct menu.
+* **The notice is only shown to users who can act on it.** Subscribers, customers, and other low-privilege roles no longer see a message about plugins they cannot install.
+* **Activation no longer needs WooCommerce to succeed.** Blocking activation would produce WordPress's opaque "Plugin could not be activated" screen; DropProduct instead installs cleanly, stays dormant, and tells you what it needs.
+* **Added a minimum WooCommerce version check (6.0).** The plugin header has always declared this requirement but nothing enforced it, so older WooCommerce installs could load DropProduct and hit fatal errors on missing APIs.
+* WooCommerce detection now tests for the `WC()` function rather than the `WooCommerce` class, and WooCommerce installed to a non-standard directory is now detected correctly.
+
+**Performance**
+
+* **The activity log table is no longer rebuilt on every request.** `dbDelta()` — which issues a `DESCRIBE` for every column — ran unguarded on each page load, including every front-end view. It is now guarded by a stored schema version, matching how the fraud log table already worked.
+* **The Analytics product lookup is cached and bounded.** It loaded every DropProduct product ID with no limit and re-ran the query for each of the five analytics sub-reports. It is now memoised per request, cached for 5 minutes, and capped, and the cache is cleared automatically when products are created, published, or deleted.
+* **The editing grid loads a bounded number of products** (200 by default) instead of hydrating every product the plugin has ever created into a single AJAX response. Adjustable via the new `dropproduct_grid_limit` filter; return `-1` for the previous behaviour.
+
+**Improvements**
+
+* **Third-party admin notices are hidden on DropProduct pages, but WordPress's own are not.** DropProduct pages previously called `remove_all_actions()` on all four notice hooks, which also swallowed core update warnings, recovery-mode alerts, paused-plugin notices and the default-password nag. Suppression is now selective: theme registration nags, plugin-recommendation blocks, review prompts and license reminders are unhooked, while WordPress core notices continue to display.
+* **Uninstall now removes everything the plugin created.** Previously only a single option was deleted, leaving behind two custom database tables, several options, dashboard transients, the Order Shield rate-limit transients, and all `_dropproduct_*` post meta. Uninstall is multisite-aware. Product posts are deliberately left untouched.
+* Order Shield hooks register correctly regardless of plugin load order relative to WooCommerce.
+* Updated the "WC tested up to" header to 10.9 and corrected `Tested up to` in the plugin readme (it referenced a WordPress version that does not exist).
+
+**New Filters**
+
+* `dropproduct_analytics_sales_by_channel` — supply real channel attribution data.
+* `dropproduct_analytics_conversion_metrics` — supply real device/conversion data.
+* `dropproduct_grid_limit` — control how many products the editing grid loads.
+* `dropproduct_suppress_admin_notices` — opt out of third-party notice hiding.
+* `dropproduct_allowed_admin_notices` — keep specific notice callbacks visible.
+* `dropproduct_trust_proxy_headers` — control proxy-header trust per request.
+* `dropproduct_trusted_proxies` — supply the trusted proxy allowlist programmatically.
+* `dropproduct_wc_notice_snooze_period` — control how long the WooCommerce dependency notice stays snoozed.
+
 = 1.1.1 =
 Maintenance release: small fixes and improvements.
 
@@ -229,6 +302,9 @@ Combined release: includes the unreleased 1.0.1 and 1.0.2 feature sets.
 * HPOS compatibility declared; extension hooks for Pro integration
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Important for every store. Sales Analytics reported zero sales on all installs because its queries referenced database columns that do not exist — rebuilt and now works. Order Shield performed no checks at all on the block-based Checkout (the WooCommerce default) and, on HPOS stores, its IP velocity and repeated-contact rules never fired — both fixed. Closes an IP-spoofing weakness that let visitors bypass every IP-based fraud rule, fixes an issue where turning Order Shield off made its settings screen unrecoverable, makes "hold suspicious orders" mode actually hold orders, and saves stock quantity edits that were previously discarded. Also replaces the blunt "requires WooCommerce" error with a soft, actionable notice, hardens CSV export against formula injection, bundles Chart.js locally instead of loading it from a CDN, and removes hardcoded sample data from Sales Analytics.
 
 = 1.1.0 =
 Major release: Sales Analytics adds a modern reporting dashboard for DropProduct sales performance, including charts, top products, geographic breakdowns, and CSV export, plus the Cost-to-Profit Tracker, Ultimate Order Shield, Price Slasher improvements, SEO Alt-Text Automator, and publish/delete workflow upgrades.

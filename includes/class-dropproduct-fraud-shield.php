@@ -26,6 +26,14 @@ class DropProduct_Fraud_Shield {
     const FAILED_PREFIX         = 'dpshield_fp_';
     const SESSION_HOLD_KEY      = 'dpshield_hold';
 
+    /**
+     * Ceiling on orders fetched when measuring IP velocity.
+     *
+     * Only the count relative to a small threshold matters, so there is no
+     * reason to pull an unbounded result set for an abusive IP.
+     */
+    const MAX_VELOCITY_SCAN = 50;
+
     // ──────────────────────────────────────────────────────────
     //  Properties
     // ──────────────────────────────────────────────────────────
@@ -53,6 +61,13 @@ class DropProduct_Fraud_Shield {
      * Called externally so construction is always cheap.
      */
     public function register_hooks() {
+        // Admin AJAX handlers are registered unconditionally.
+        //
+        // They must stay available even when the shield is switched off,
+        // otherwise saving `enabled = 0` would remove the very endpoint
+        // needed to switch it back on, permanently locking the settings form.
+        $this->register_admin_hooks();
+
         if ( ! $this->is_enabled() ) {
             return;
         }
@@ -64,18 +79,42 @@ class DropProduct_Fraud_Shield {
         add_action( 'woocommerce_checkout_process', array( $this, 'process_checkout' ) );
 
         // Post-creation — apply ON_HOLD status when needed.
-        add_action( 'woocommerce_checkout_create_order', array( $this, 'on_create_order' ), 10, 2 );
+        //
+        // Hooked to `checkout_order_processed` rather than `checkout_create_order`:
+        // the latter runs before the order has an ID, so update_status() would be
+        // overwritten by the gateway and add_order_note() would be discarded.
+        add_action( 'woocommerce_checkout_order_processed', array( $this, 'on_order_processed' ), 10, 3 );
+
+        // ── Blocks / Store API checkout ────────────────────────
+        //
+        // The block-based Checkout fires none of the hooks above, so without
+        // these the shield was inert on any store using the modern checkout —
+        // which is the WooCommerce default.
+        add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'process_store_api_checkout' ), 10, 2 );
+        add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'on_store_api_order_processed' ), 10, 1 );
 
         // Track failed payment attempts.
         add_action( 'woocommerce_order_status_failed', array( $this, 'track_failed_payment' ) );
 
         // Conditionally disable COD.
         add_filter( 'woocommerce_available_payment_gateways', array( $this, 'maybe_disable_cod' ) );
+    }
 
-        // AJAX handlers for the admin panel.
-        add_action( 'wp_ajax_dropproduct_save_fraud_settings', array( $this, 'ajax_save_settings' ) );
-        add_action( 'wp_ajax_dropproduct_fraud_delete_log',    array( $this, 'ajax_delete_log'    ) );
-        add_action( 'wp_ajax_dropproduct_fraud_clear_logs',    array( $this, 'ajax_clear_logs'    ) );
+    /**
+     * Register the admin-only AJAX endpoints.
+     *
+     * Split out of register_hooks() so it can run regardless of whether the
+     * shield itself is enabled. Guarded against double registration because
+     * register_hooks() may fire more than once on unusual boot orders.
+     *
+     * @since 1.2.0
+     */
+    private function register_admin_hooks() {
+        if ( ! has_action( 'wp_ajax_dropproduct_save_fraud_settings', array( $this, 'ajax_save_settings' ) ) ) {
+            add_action( 'wp_ajax_dropproduct_save_fraud_settings', array( $this, 'ajax_save_settings' ) );
+            add_action( 'wp_ajax_dropproduct_fraud_delete_log',    array( $this, 'ajax_delete_log'    ) );
+            add_action( 'wp_ajax_dropproduct_fraud_clear_logs',    array( $this, 'ajax_clear_logs'    ) );
+        }
     }
 
     // ──────────────────────────────────────────────────────────
@@ -110,6 +149,11 @@ class DropProduct_Fraud_Shield {
             'cod_restriction_threshold' => 40,
             'disposable_domains'        => implode( "\n", $this->default_disposable_domains() ),
             'blacklist'                 => '',
+            // Off by default. Only turn this on when the store genuinely sits
+            // behind a reverse proxy or CDN, otherwise visitors can spoof their
+            // own IP address and bypass every IP-based rule below.
+            'trust_proxy_headers'       => false,
+            'trusted_proxies'           => '',
         );
     }
 
@@ -134,17 +178,26 @@ class DropProduct_Fraud_Shield {
     }
 
     /**
-     * Main checkout validation.
-     * Runs before the order is created — can add WC error notices to abort.
+     * Run every rule and decide what should happen.
+     *
+     * Storage- and transport-agnostic: it takes a normalised data array and
+     * returns a verdict, so the classic checkout and the Store API (Blocks)
+     * checkout apply identical rules rather than each reimplementing them.
+     *
+     * @since 1.2.0
+     * @param array $data Normalised checkout data from collect_data().
+     * @return array{action: string, score: int, reasons: string[]}
      */
-    public function process_checkout() {
-        $data    = $this->collect_data();
+    private function evaluate( array $data ) {
         $reasons = array();
 
         // ── 1. Instant pre-checks ──────────────────────────────
         if ( 'BLOCK' === $this->run_pre_checks( $data, $reasons ) ) {
-            $this->execute_block( $data, 999, $reasons );
-            return;
+            return array(
+                'action'  => 'BLOCK',
+                'score'   => 999,
+                'reasons' => $reasons,
+            );
         }
 
         // ── 2. Risk scoring ────────────────────────────────────
@@ -160,10 +213,13 @@ class DropProduct_Fraud_Shield {
 
         // Card testing: too many failed payments → instant block.
         $failed_threshold = (int) $this->cfg['failed_payment_threshold'];
-        if ( $data['failed_payment_attempts'] >= $failed_threshold && $failed_threshold > 0 ) {
+        if ( $failed_threshold > 0 && $data['failed_payment_attempts'] >= $failed_threshold ) {
             $reasons[] = 'card_testing_block';
-            $this->execute_block( $data, $score, $reasons );
-            return;
+            return array(
+                'action'  => 'BLOCK',
+                'score'   => $score,
+                'reasons' => $reasons,
+            );
         }
 
         // ── 3. Decision ────────────────────────────────────────
@@ -171,42 +227,171 @@ class DropProduct_Fraud_Shield {
         $review_threshold = (int) $this->cfg['review_threshold'];
 
         if ( $score >= $block_threshold ) {
-            if ( 'hold' === $this->cfg['action_mode'] ) {
-                // Store for on_create_order — let the order be created then hold it.
-                WC()->session->set( self::SESSION_HOLD_KEY, array(
-                    'score'   => $score,
-                    'reasons' => $reasons,
-                ) );
-            } else {
-                $this->execute_block( $data, $score, $reasons );
-            }
+            $action = ( 'hold' === $this->cfg['action_mode'] ) ? 'ON_HOLD' : 'BLOCK';
         } elseif ( $score >= $review_threshold ) {
-            WC()->session->set( self::SESSION_HOLD_KEY, array(
-                'score'   => $score,
-                'reasons' => $reasons,
-            ) );
+            $action = 'ON_HOLD';
         } else {
-            // ALLOW — log clean pass.
-            $this->logger->log( array(
-                'order_id'        => 0,
-                'ip_address'      => $data['ip_address'],
-                'email'           => $data['email'],
-                'risk_score'      => $score,
-                'triggered_rules' => $reasons,
-                'final_action'    => 'ALLOW',
-            ) );
+            $action = 'ALLOW';
         }
+
+        return array(
+            'action'  => $action,
+            'score'   => $score,
+            'reasons' => $reasons,
+        );
     }
 
     /**
-     * Fires when WooCommerce creates the order object.
-     * If a hold was requested, set the order on-hold and add notes.
+     * Main checkout validation for the classic (shortcode) checkout.
      *
-     * @param WC_Order $order The new order.
-     * @param array    $data  Posted checkout data.
+     * Runs before the order is created — can add WC error notices to abort.
      */
-    public function on_create_order( $order, $data ) {
-        $hold = WC()->session->get( self::SESSION_HOLD_KEY );
+    public function process_checkout() {
+        $data    = $this->collect_data();
+        $verdict = $this->evaluate( $data );
+
+        if ( 'BLOCK' === $verdict['action'] ) {
+            $this->execute_block( $data, $verdict['score'], $verdict['reasons'] );
+            return;
+        }
+
+        if ( 'ON_HOLD' === $verdict['action'] ) {
+            $this->flag_for_hold( $verdict['score'], $verdict['reasons'] );
+            return;
+        }
+
+        // ALLOW — log clean pass.
+        $this->logger->log( array(
+            'order_id'        => 0,
+            'ip_address'      => $data['ip_address'],
+            'email'           => $data['email'],
+            'risk_score'      => $verdict['score'],
+            'triggered_rules' => $verdict['reasons'],
+            'final_action'    => 'ALLOW',
+        ) );
+    }
+
+    /**
+     * Checkout validation for the Blocks / Store API checkout.
+     *
+     * The block-based Checkout is the WooCommerce default and does not fire
+     * `woocommerce_checkout_process` at all, so earlier drafts of Order Shield
+     * ran no checks whatsoever on a modern store while still reporting itself
+     * as active. This hook is the Store API equivalent: the order exists and
+     * is populated, but has not yet been paid for.
+     *
+     * Two rules cannot apply here — the honeypot and the checkout-speed timer
+     * both need fields injected into the classic form. Every server-side rule
+     * (blacklist, disposable email, IP velocity, repeated contact, IP/country
+     * mismatch, failed payments, card testing) applies normally.
+     *
+     * @since 1.2.0
+     * @param WC_Order         $order   Draft order built from the request.
+     * @param \WP_REST_Request $request The Store API request.
+     *
+     * @throws \Automattic\WooCommerce\StoreApi\Exceptions\RouteException When the order is blocked.
+     */
+    public function process_store_api_checkout( $order, $request = null ) {
+        if ( ! $order instanceof WC_Order ) {
+            return;
+        }
+
+        $data    = $this->collect_data( $order );
+        $verdict = $this->evaluate( $data );
+
+        if ( 'BLOCK' === $verdict['action'] ) {
+            $this->logger->log( array(
+                'order_id'        => $order->get_id(),
+                'ip_address'      => $data['ip_address'],
+                'email'           => $data['email'],
+                'risk_score'      => $verdict['score'],
+                'triggered_rules' => $verdict['reasons'],
+                'final_action'    => 'BLOCK',
+            ) );
+
+            throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
+                'dropproduct_order_blocked',
+                esc_html__( 'Unable to process your order. Please contact support.', 'dropproduct' ),
+                403
+            );
+        }
+
+        if ( 'ON_HOLD' === $verdict['action'] ) {
+            $this->flag_for_hold( $verdict['score'], $verdict['reasons'] );
+            return;
+        }
+
+        $this->logger->log( array(
+            'order_id'        => $order->get_id(),
+            'ip_address'      => $data['ip_address'],
+            'email'           => $data['email'],
+            'risk_score'      => $verdict['score'],
+            'triggered_rules' => $verdict['reasons'],
+            'final_action'    => 'ALLOW',
+        ) );
+    }
+
+    /**
+     * Record that the order about to be created should be held for review.
+     *
+     * @since 1.2.0
+     * @param int      $score   Risk score.
+     * @param string[] $reasons Triggered rule identifiers.
+     */
+    private function flag_for_hold( $score, $reasons ) {
+        if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+            return;
+        }
+
+        WC()->session->set( self::SESSION_HOLD_KEY, array(
+            'score'   => (int) $score,
+            'reasons' => (array) $reasons,
+        ) );
+    }
+
+    /**
+     * Fires after WooCommerce has created and saved the order.
+     *
+     * At this point the order has a real ID, so update_status() persists and
+     * add_order_note() is stored. Running earlier (on checkout_create_order)
+     * meant the status was overwritten by the gateway and notes were dropped.
+     *
+     * @since 1.2.0 Renamed from on_create_order() and re-hooked.
+     *
+     * @param int      $order_id Order ID.
+     * @param array    $posted   Posted checkout data.
+     * @param WC_Order $order    The saved order object.
+     */
+    public function on_order_processed( $order_id, $posted, $order = null ) {
+        if ( ! $order instanceof WC_Order ) {
+            $order = wc_get_order( $order_id );
+        }
+
+        $this->apply_hold_if_flagged( $order );
+    }
+
+    /**
+     * Store API equivalent of on_order_processed().
+     *
+     * @since 1.2.0
+     * @param WC_Order $order The placed order.
+     */
+    public function on_store_api_order_processed( $order ) {
+        $this->apply_hold_if_flagged( $order );
+    }
+
+    /**
+     * Move an order to on-hold when the checkout run flagged it for review.
+     *
+     * @since 1.2.0
+     * @param WC_Order|false|null $order The saved order.
+     */
+    private function apply_hold_if_flagged( $order ) {
+        if ( ! $order instanceof WC_Order ) {
+            return;
+        }
+
+        $hold = ( function_exists( 'WC' ) && WC()->session ) ? WC()->session->get( self::SESSION_HOLD_KEY ) : null;
         if ( ! $hold ) {
             return;
         }
@@ -215,8 +400,6 @@ class DropProduct_Fraud_Shield {
 
         $score   = (int) $hold['score'];
         $reasons = (array) $hold['reasons'];
-
-        $order->update_status( 'on-hold' );
 
         $note = sprintf(
             /* translators: %1$d = risk score, %2$s = rules list */
@@ -233,6 +416,10 @@ class DropProduct_Fraud_Shield {
                 false
             );
         }
+
+        // Set the hold last, so the notes above are already attached when the
+        // status-change email fires. update_status() saves the order itself.
+        $order->update_status( 'on-hold', '', true );
 
         $this->logger->log( array(
             'order_id'        => $order->get_id(),
@@ -266,7 +453,15 @@ class DropProduct_Fraud_Shield {
      * @return array
      */
     public function maybe_disable_cod( $gateways ) {
-        if ( empty( $this->cfg['enable_cod_restriction'] ) || ! is_checkout() ) {
+        if ( empty( $this->cfg['enable_cod_restriction'] ) ) {
+            return $gateways;
+        }
+
+        // is_checkout() is false during Store API requests, so on a Blocks
+        // checkout this used to bail before the restriction could apply.
+        $is_store_api = defined( 'REST_REQUEST' ) && REST_REQUEST;
+
+        if ( ! $is_store_api && ! is_checkout() ) {
             return $gateways;
         }
 
@@ -293,7 +488,39 @@ class DropProduct_Fraud_Shield {
     //  Data Collection
     // ──────────────────────────────────────────────────────────
 
-    private function collect_data() {
+    /**
+     * Build the normalised data array the scoring rules operate on.
+     *
+     * @param WC_Order|null $order When supplied (Store API / Blocks checkout),
+     *                             billing details are read from the order
+     *                             instead of $_POST. The honeypot and timing
+     *                             fields do not exist on that checkout, so they
+     *                             come back empty and their rules score zero.
+     * @return array
+     */
+    private function collect_data( $order = null ) {
+        $ip = $this->get_ip();
+
+        if ( $order instanceof WC_Order ) {
+            return array(
+                'email'                   => sanitize_email( $order->get_billing_email() ),
+                'phone'                   => sanitize_text_field( $order->get_billing_phone() ),
+                'billing_name'            => trim( implode( ' ', array_filter( array(
+                    sanitize_text_field( $order->get_billing_first_name() ),
+                    sanitize_text_field( $order->get_billing_last_name() ),
+                ) ) ) ),
+                'billing_country'         => sanitize_text_field( $order->get_billing_country() ),
+                // Prefer the IP already recorded on the order; fall back to the
+                // request when the order has not captured one.
+                'ip_address'              => $order->get_customer_ip_address() ? $order->get_customer_ip_address() : $ip,
+                'checkout_time'           => 0,
+                'honeypot'                => '',
+                'failed_payment_attempts' => $this->get_failed_attempt_count(
+                    $order->get_customer_ip_address() ? $order->get_customer_ip_address() : $ip
+                ),
+            );
+        }
+
         // phpcs:disable WordPress.Security.NonceVerification.Missing
         return array(
             'email'                   => isset( $_POST['billing_email'] )      ? sanitize_email( wp_unslash( $_POST['billing_email'] ) )      : '',
@@ -303,10 +530,10 @@ class DropProduct_Fraud_Shield {
                 isset( $_POST['billing_last_name'] )  ? sanitize_text_field( wp_unslash( $_POST['billing_last_name'] ) )  : '',
             ) ) ) ),
             'billing_country'         => isset( $_POST['billing_country'] )    ? sanitize_text_field( wp_unslash( $_POST['billing_country'] ) ) : '',
-            'ip_address'              => $this->get_ip(),
+            'ip_address'              => $ip,
             'checkout_time'           => isset( $_POST['_dpshield_ts'] )       ? absint( $_POST['_dpshield_ts'] ) : 0,
             'honeypot'                => isset( $_POST['_dpshield_hp'] )       ? sanitize_text_field( wp_unslash( $_POST['_dpshield_hp'] ) )   : '',
-            'failed_payment_attempts' => $this->get_failed_attempt_count( $this->get_ip() ),
+            'failed_payment_attempts' => $this->get_failed_attempt_count( $ip ),
         );
         // phpcs:enable WordPress.Security.NonceVerification.Missing
     }
@@ -369,10 +596,10 @@ class DropProduct_Fraud_Shield {
 
     private function score_repeated_data( $data, &$reasons ) {
         $scored = false;
-        if ( ! empty( $data['phone'] ) && $this->field_seen_before( '_billing_phone', $data['phone'] ) ) {
+        if ( ! empty( $data['phone'] ) && $this->field_seen_before( 'billing_phone', $data['phone'] ) ) {
             $scored = true;
         }
-        if ( ! empty( $data['email'] ) && $this->field_seen_before( '_billing_email', $data['email'] ) ) {
+        if ( ! empty( $data['email'] ) && $this->field_seen_before( 'billing_email', $data['email'] ) ) {
             $scored = true;
         }
         if ( $scored ) {
@@ -441,20 +668,166 @@ class DropProduct_Fraud_Shield {
     // ──────────────────────────────────────────────────────────
 
     /**
-     * Get the real visitor IP, respecting common proxy headers.
+     * Get the visitor IP.
+     *
+     * Proxy headers (X-Forwarded-For, Client-IP, CF-Connecting-IP) are supplied
+     * by the client and can be set to anything. Trusting them unconditionally —
+     * as this method used to — let an attacker send a different Client-IP on
+     * every request and walk straight past IP velocity limits, failed-payment
+     * counting, and the COD restriction. It also let them inflate someone
+     * else's counters.
+     *
+     * They are therefore only consulted when the site is explicitly configured
+     * as sitting behind a reverse proxy, and only when REMOTE_ADDR — which the
+     * client cannot forge — matches a trusted proxy address.
+     *
+     * @return string Validated IP, or '0.0.0.0' when none could be determined.
      */
     private function get_ip() {
-        $keys = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR' );
+        $remote_addr = isset( $_SERVER['REMOTE_ADDR'] )
+            ? trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) )
+            : '';
+
+        if ( ! filter_var( $remote_addr, FILTER_VALIDATE_IP ) ) {
+            $remote_addr = '';
+        }
+
+        if ( ! $this->proxy_is_trusted( $remote_addr ) ) {
+            return $remote_addr ? $remote_addr : '0.0.0.0';
+        }
+
+        // Behind a trusted proxy: the forwarded headers are now meaningful.
+        $keys = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP' );
+
         foreach ( $keys as $key ) {
-            if ( ! empty( $_SERVER[ $key ] ) ) {
-                $ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) ) );
-                $ip  = trim( $ips[0] );
-                if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-                    return $ip;
-                }
+            if ( empty( $_SERVER[ $key ] ) ) {
+                continue;
+            }
+
+            $ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) ) );
+
+            // Left-most entry is the originating client.
+            $ip = trim( $ips[0] );
+
+            if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+                return $ip;
             }
         }
-        return '0.0.0.0';
+
+        return $remote_addr ? $remote_addr : '0.0.0.0';
+    }
+
+    /**
+     * Whether the connecting address is a reverse proxy we trust.
+     *
+     * Off by default: a direct-to-origin store must never honour these headers.
+     * Enable via the Order Shield settings, or by filtering the proxy list.
+     *
+     * @param string $remote_addr Validated REMOTE_ADDR.
+     * @return bool
+     */
+    private function proxy_is_trusted( $remote_addr ) {
+        if ( '' === $remote_addr ) {
+            return false;
+        }
+
+        $enabled = ! empty( $this->cfg['trust_proxy_headers'] );
+
+        /**
+         * Filter whether forwarded-for headers are honoured for this request.
+         *
+         * @since 1.2.0
+         * @param bool   $enabled     Whether the site is behind a trusted proxy.
+         * @param string $remote_addr The connecting address.
+         */
+        $enabled = (bool) apply_filters( 'dropproduct_trust_proxy_headers', $enabled, $remote_addr );
+
+        if ( ! $enabled ) {
+            return false;
+        }
+
+        $proxies = $this->get_trusted_proxies();
+
+        // An empty allowlist means "any proxy" — appropriate when the origin is
+        // firewalled so that only the CDN can reach it, which is the normal
+        // Cloudflare/managed-host setup.
+        if ( empty( $proxies ) ) {
+            return true;
+        }
+
+        foreach ( $proxies as $proxy ) {
+            if ( $this->ip_matches( $remote_addr, $proxy ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Trusted proxy addresses / CIDR ranges from settings.
+     *
+     * @return string[]
+     */
+    private function get_trusted_proxies() {
+        $raw = isset( $this->cfg['trusted_proxies'] ) ? $this->cfg['trusted_proxies'] : '';
+
+        $items = array_values( array_filter( array_map( 'trim', preg_split( '/[\r\n,]+/', (string) $raw ) ) ) );
+
+        /**
+         * Filter the trusted proxy allowlist.
+         *
+         * @since 1.2.0
+         * @param string[] $items IP addresses or CIDR ranges.
+         */
+        return (array) apply_filters( 'dropproduct_trusted_proxies', $items );
+    }
+
+    /**
+     * Match an IP against a literal address or a CIDR range.
+     *
+     * Supports both IPv4 and IPv6.
+     *
+     * @param string $ip    Address to test.
+     * @param string $range Literal address or CIDR notation.
+     * @return bool
+     */
+    private function ip_matches( $ip, $range ) {
+        if ( false === strpos( $range, '/' ) ) {
+            return $ip === $range;
+        }
+
+        list( $subnet, $bits ) = explode( '/', $range, 2 );
+
+        $ip_bin     = @inet_pton( $ip );      // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+        $subnet_bin = @inet_pton( $subnet );  // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+
+        // Both must parse, and both must be the same family (v4 vs v6).
+        if ( false === $ip_bin || false === $subnet_bin || strlen( $ip_bin ) !== strlen( $subnet_bin ) ) {
+            return false;
+        }
+
+        $bits = (int) $bits;
+        $max  = strlen( $ip_bin ) * 8;
+
+        if ( $bits < 0 || $bits > $max ) {
+            return false;
+        }
+
+        $whole_bytes    = intdiv( $bits, 8 );
+        $remainder_bits = $bits % 8;
+
+        if ( $whole_bytes > 0 && 0 !== substr_compare( $ip_bin, substr( $subnet_bin, 0, $whole_bytes ), 0, $whole_bytes ) ) {
+            return false;
+        }
+
+        if ( 0 === $remainder_bits ) {
+            return true;
+        }
+
+        $mask = ~( ( 1 << ( 8 - $remainder_bits ) ) - 1 ) & 0xFF;
+
+        return ( ord( $ip_bin[ $whole_bytes ] ) & $mask ) === ( ord( $subnet_bin[ $whole_bytes ] ) & $mask );
     }
 
     /**
@@ -480,46 +853,59 @@ class DropProduct_Fraud_Shield {
 
     /**
      * Count WC orders placed from an IP within the given time window.
+     *
+     * Uses wc_get_orders() rather than a direct wp_posts/postmeta query. The
+     * plugin declares HPOS compatibility, and under HPOS orders live in
+     * wp_wc_orders — the old query matched nothing there, so IP velocity
+     * scoring silently never fired on any store with HPOS enabled.
+     *
+     * @param int|string $ip             Customer IP.
+     * @param int        $period_seconds Look-back window.
+     * @return int
      */
     private function count_recent_orders_by_ip( $ip, $period_seconds ) {
-        global $wpdb;
+        if ( empty( $ip ) || '0.0.0.0' === $ip ) {
+            return 0;
+        }
 
-        $since = gmdate( 'Y-m-d H:i:s', time() - (int) $period_seconds );
+        $since = time() - (int) $period_seconds;
 
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $count = $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(p.ID)
-               FROM {$wpdb->posts} p
-         INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
-              WHERE p.post_type     = 'shop_order'
-                AND p.post_date_gmt >= %s
-                AND pm.meta_key    = '_customer_ip_address'
-                AND pm.meta_value  = %s",
-            $since,
-            $ip
+        $orders = wc_get_orders( array(
+            'limit'               => self::MAX_VELOCITY_SCAN,
+            'type'                => 'shop_order',
+            'status'              => 'any',
+            'customer_ip_address' => $ip,
+            'date_created'        => '>' . $since,
+            'return'              => 'ids',
         ) );
-        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
-        return (int) $count;
+        return count( (array) $orders );
     }
 
     /**
-     * Check whether a meta field value has appeared in ≥2 past orders.
+     * Check whether a billing field value has appeared in ≥2 past orders.
+     *
+     * @param string $field Order field: 'billing_phone' or 'billing_email'.
+     * @param string $value Value to look for.
+     * @return bool
      */
-    private function field_seen_before( $meta_key, $value ) {
+    private function field_seen_before( $field, $value ) {
         if ( empty( $value ) ) {
             return false;
         }
-        global $wpdb;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $count = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s",
-            $meta_key,
-            $value
+        // wc_get_orders() routes to the active order data store, so this works
+        // under both HPOS and legacy post storage. The previous version read
+        // postmeta directly and returned 0 on every HPOS store.
+        $orders = wc_get_orders( array(
+            'limit'  => 2,
+            'type'   => 'shop_order',
+            'status' => 'any',
+            $field   => $value,
+            'return' => 'ids',
         ) );
 
-        return $count >= 2;
+        return count( (array) $orders ) >= 2;
     }
 
     private function get_disposable_domains() {
@@ -585,6 +971,8 @@ class DropProduct_Fraud_Shield {
             'cod_restriction_threshold' => max( 0, absint( $_POST['cod_restriction_threshold'] ?? 40 ) ),
             'disposable_domains'        => sanitize_textarea_field( wp_unslash( $_POST['disposable_domains'] ?? '' ) ),
             'blacklist'                 => sanitize_textarea_field( wp_unslash( $_POST['blacklist'] ?? '' ) ),
+            'trust_proxy_headers'       => ! empty( $_POST['trust_proxy_headers'] ),
+            'trusted_proxies'           => sanitize_textarea_field( wp_unslash( $_POST['trusted_proxies'] ?? '' ) ),
         );
         // phpcs:enable WordPress.Security.NonceVerification.Missing
 

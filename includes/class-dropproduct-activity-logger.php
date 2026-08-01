@@ -18,6 +18,12 @@ class DropProduct_Activity_Logger
     /** DB table name (without prefix). */
     const TABLE = 'dropproduct_activity_log';
 
+    /** Option holding the installed schema version. */
+    const DB_VERSION_OPTION = 'dropproduct_activity_db_version';
+
+    /** Bump this when the CREATE TABLE statement below changes. */
+    const DB_VERSION = '1.0';
+
     /** Supported action types. */
     const ACTION_UPLOAD  = 'upload';
     const ACTION_PUBLISH = 'publish';
@@ -26,11 +32,18 @@ class DropProduct_Activity_Logger
 
     /**
      * Create the activity log table if it does not exist.
-     * Safe to call on every boot (uses dbDelta).
+     *
+     * Guarded by a stored schema version. dbDelta() issues a DESCRIBE for every
+     * column on every call, so running it unguarded on each request (including
+     * every front-end page view) measurably slowed the whole site.
      */
     public static function create_table()
     {
         global $wpdb;
+
+        if ( get_option( self::DB_VERSION_OPTION ) === self::DB_VERSION ) {
+            return;
+        }
 
         $table      = $wpdb->prefix . self::TABLE;
         $charset    = $wpdb->get_charset_collate();
@@ -52,6 +65,8 @@ class DropProduct_Activity_Logger
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta( $sql );
+
+        update_option( self::DB_VERSION_OPTION, self::DB_VERSION, false );
     }
 
     /**
@@ -98,21 +113,36 @@ class DropProduct_Activity_Logger
     {
         global $wpdb;
 
-        $table = $wpdb->prefix . self::TABLE;
-        $where = $action_filter
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            ? $wpdb->prepare( 'WHERE action_type = %s', $action_filter )
-            : '';
+        $table  = $wpdb->prefix . self::TABLE;
+        $limit  = max( 1, (int) $limit );
+        $offset = max( 0, (int) $offset );
 
-        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $rows = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$table} {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d",
-                $limit,
-                $offset
-            )
-        );
-        $total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} {$where}" );
+        // Each query is prepared exactly once. The previous version nested a
+        // prepared fragment inside a second prepare() call, which double-escapes
+        // and trips _doing_it_wrong() on WP 6.2+ if the value contains a '%'.
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        if ( $action_filter ) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$table} WHERE action_type = %s ORDER BY created_at DESC LIMIT %d OFFSET %d",
+                    $action_filter,
+                    $limit,
+                    $offset
+                )
+            );
+            $total = (int) $wpdb->get_var(
+                $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE action_type = %s", $action_filter )
+            );
+        } else {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$table} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+                    $limit,
+                    $offset
+                )
+            );
+            $total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+        }
         // phpcs:enable
 
         return array( 'rows' => (array) $rows, 'total' => $total );

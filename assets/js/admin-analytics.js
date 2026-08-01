@@ -109,7 +109,12 @@
 			this.$totalSales.text('$' + this.formatNumber(summary.total_sales));
 			this.$totalOrders.text(summary.total_orders);
 			this.$avgOrderValue.text('$' + this.formatNumber(summary.average_order_value));
-			this.$conversionRate.text(summary.conversion_rate.toFixed(2) + '%');
+			// Conversion rate is null when the store has no impression data.
+			this.$conversionRate.text(
+				summary.conversion_rate === null || typeof summary.conversion_rate === 'undefined'
+					? '—'
+					: Number(summary.conversion_rate).toFixed(2) + '%'
+			);
 
 			// Update growth indicators
 			this.updateGrowthIndicator(
@@ -128,7 +133,7 @@
 		 * Update growth indicator
 		 */
 		updateGrowthIndicator: function ($el, growth, type) {
-			$el.find('.dpanalytics-growth-percent').text(Math.abs(growth).toFixed(1) + '%');
+			$el.find('.dpanalytics-growth-percent').text(Math.abs(Number(growth) || 0).toFixed(1) + '%');
 
 			if (type === 'positive') {
 				$el.removeClass('negative');
@@ -481,28 +486,82 @@
 		/**
 		 * Generate CSV data
 		 */
+		/**
+		 * Escape a value for safe inclusion in a CSV cell.
+		 *
+		 * Handles two separate problems:
+		 *  1. Delimiters — a product name containing a comma, quote, or newline
+		 *     used to shift every following column.
+		 *  2. Formula injection — spreadsheet apps execute a cell starting with
+		 *     =, +, -, @, TAB or CR. A product named `=HYPERLINK(...)` would run
+		 *     on open. Prefixing with a single quote neutralises it.
+		 *
+		 * @param {*} value Raw cell value.
+		 * @return {string} Quoted, escaped cell.
+		 */
+		csvCell: function (value) {
+			if (value === null || typeof value === 'undefined') {
+				return '""';
+			}
+
+			var str = String(value);
+
+			if (/^[=+\-@\t\r]/.test(str)) {
+				str = "'" + str;
+			}
+
+			return '"' + str.replace(/"/g, '""') + '"';
+		},
+
+		/**
+		 * Build one CSV row from an array of values.
+		 *
+		 * @param {Array} values Cell values.
+		 * @return {string} CSV row including trailing newline.
+		 */
+		csvRow: function (values) {
+			var self = this;
+			return values.map(function (v) { return self.csvCell(v); }).join(',') + '\r\n';
+		},
+
+		/**
+		 * Generate CSV data
+		 */
 		generateCSV: function () {
-			var summary = this.currentData.summary;
-			var csv = 'DropProduct Sales Analytics Report\n';
-			csv += 'Date Range,' + this.$rangeSelect.find('option:selected').text() + '\n';
-			csv += 'Generated,' + new Date().toLocaleString() + '\n\n';
+			var self    = this;
+			var summary = this.currentData.summary || {};
 
-			csv += 'SUMMARY METRICS\n';
-			csv += 'Total Sales,' + summary.total_sales + '\n';
-			csv += 'Total Orders,' + summary.total_orders + '\n';
-			csv += 'Average Order Value,' + summary.average_order_value + '\n';
-			csv += 'Conversion Rate,' + summary.conversion_rate + '%\n\n';
+			// BOM so Excel opens UTF-8 product names correctly.
+			var csv = '﻿';
 
-			csv += 'TOP PRODUCTS\n';
-			csv += 'Product,Sales,Quantity\n';
-			this.currentData.top_products.forEach(function (p) {
-				csv += p.product_name + ',' + p.sales + ',' + p.quantity + '\n';
+			csv += this.csvRow(['DropProduct Sales Analytics Report']);
+			csv += this.csvRow(['Date Range', this.$rangeSelect.find('option:selected').text()]);
+			csv += this.csvRow(['Generated', new Date().toLocaleString()]);
+			csv += '\r\n';
+
+			csv += this.csvRow(['SUMMARY METRICS']);
+			csv += this.csvRow(['Total Sales', summary.total_sales]);
+			csv += this.csvRow(['Total Orders', summary.total_orders]);
+			csv += this.csvRow(['Average Order Value', summary.average_order_value]);
+			csv += this.csvRow([
+				'Conversion Rate',
+				summary.conversion_rate === null || typeof summary.conversion_rate === 'undefined'
+					? 'n/a'
+					: summary.conversion_rate + '%'
+			]);
+			csv += '\r\n';
+
+			csv += this.csvRow(['TOP PRODUCTS']);
+			csv += this.csvRow(['Product', 'Sales', 'Quantity']);
+			(this.currentData.top_products || []).forEach(function (p) {
+				csv += self.csvRow([p.product_name, p.sales, p.quantity]);
 			});
 
-			csv += '\nSALES BY COUNTRY\n';
-			csv += 'Country,Sales\n';
-			this.currentData.sales_by_country.forEach(function (c) {
-				csv += c.country + ',' + c.sales + '\n';
+			csv += '\r\n';
+			csv += this.csvRow(['SALES BY COUNTRY']);
+			csv += this.csvRow(['Country', 'Sales']);
+			(this.currentData.sales_by_country || []).forEach(function (c) {
+				csv += self.csvRow([c.country, c.sales]);
 			});
 
 			return csv;

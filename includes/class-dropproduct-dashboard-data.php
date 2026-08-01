@@ -197,21 +197,35 @@ class DropProduct_Dashboard_Data
         " );
         // phpcs:enable
 
+        // Values are returned raw. The dashboard JS escapes at the point of
+        // insertion, and escaping here as well produced visible entities
+        // ("O&amp;#039;Brien") in customer names and emails.
         $threats = array();
         foreach ( (array) $recent as $row ) {
-            $rules    = json_decode( $row->triggered_rules, true );
+            $rules     = json_decode( $row->triggered_rules, true );
             $threats[] = array(
-                'ip'      => esc_html( $row->ip_address ),
-                'email'   => esc_html( $row->email ),
-                'action'  => esc_html( $row->final_action ),
-                'score'   => (int) $row->risk_score,
-                'rules'   => is_array( $rules ) ? array_map( 'esc_html', $rules ) : array(),
-                'time'    => esc_html( $row->created_at ),
+                'ip'     => (string) $row->ip_address,
+                'email'  => (string) $row->email,
+                'action' => (string) $row->final_action,
+                'score'  => (int) $row->risk_score,
+                'rules'  => is_array( $rules ) ? array_values( array_map( 'strval', $rules ) ) : array(),
+                'time'   => (string) $row->created_at,
             );
         }
 
-        $shield_cfg     = get_option( 'dropproduct_fraud_shield_settings', array() );
-        $shield_enabled = ! empty( $shield_cfg['enabled'] );
+        // Must match DropProduct_Fraud_Shield::OPTION_KEY. This previously read
+        // 'dropproduct_fraud_shield_settings', which never exists, so the
+        // dashboard badge always reported the shield as inactive.
+        $option_key = class_exists( 'DropProduct_Fraud_Shield' )
+            ? DropProduct_Fraud_Shield::OPTION_KEY
+            : 'dropproduct_fraud_shield';
+
+        $shield_cfg = (array) get_option( $option_key, array() );
+
+        // The shield defaults to enabled, so an absent key means "on", not "off".
+        $shield_enabled = array_key_exists( 'enabled', $shield_cfg )
+            ? ! empty( $shield_cfg['enabled'] )
+            : true;
 
         $data = array(
             'total_blocked'  => $tally['BLOCK'],
@@ -265,14 +279,17 @@ class DropProduct_Dashboard_Data
                 ? human_time_diff( $date_created->getTimestamp(), current_time( 'timestamp' ) )
                 : '—';
 
+            // Text fields are raw — the dashboard JS escapes them on insertion.
+            // URLs stay escaped here because the JS drops them straight into an
+            // href attribute.
             $data[] = array(
                 'id'        => $order->get_id(),
-                'customer'  => esc_html( $customer ),
-                'status'    => esc_html( wc_get_order_status_name( $order->get_status() ) ),
-                'status_key'=> esc_html( $order->get_status() ),
+                'customer'  => $customer,
+                'status'    => wc_get_order_status_name( $order->get_status() ),
+                'status_key'=> $order->get_status(),
                 'total'     => wc_price( $order->get_total() ),
-                'time_ago'  => esc_html( $time_diff ),
-                'edit_url'  => esc_url( get_edit_post_link( $order->get_id() ) ?: admin_url( 'post.php?post=' . $order->get_id() . '&action=edit' ) ),
+                'time_ago'  => $time_diff,
+                'edit_url'  => esc_url( get_edit_post_link( $order->get_id(), 'raw' ) ?: admin_url( 'post.php?post=' . $order->get_id() . '&action=edit' ) ),
             );
         }
 
@@ -356,8 +373,9 @@ class DropProduct_Dashboard_Data
             foreach ( (array) $rows as $row ) {
                 $out[] = array(
                     'id'       => (int) $row->ID,
-                    'title'    => esc_html( $row->post_title ),
-                    'edit_url' => esc_url( get_edit_post_link( $row->ID ) ),
+                    // Raw — the dashboard JS escapes titles on insertion.
+                    'title'    => (string) $row->post_title,
+                    'edit_url' => esc_url( get_edit_post_link( $row->ID, 'raw' ) ),
                     'qty'      => isset( $row->qty ) ? (int) $row->qty : null,
                 );
             }
@@ -420,19 +438,19 @@ class DropProduct_Dashboard_Data
                 'key'    => 'payment',
                 'label'  => __( 'Payment gateway active', 'dropproduct' ),
                 'done'   => $payment_ok,
-                'fix_url'=> admin_url( 'admin.php?page=wc-settings&tab=checkout' ),
+                'fix_url'=> esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout' ) ),
             ),
             array(
                 'key'    => 'shipping',
                 'label'  => __( 'Shipping zone configured', 'dropproduct' ),
                 'done'   => $shipping_ok,
-                'fix_url'=> admin_url( 'admin.php?page=wc-settings&tab=shipping' ),
+                'fix_url'=> esc_url( admin_url( 'admin.php?page=wc-settings&tab=shipping' ) ),
             ),
             array(
                 'key'    => 'tax',
                 'label'  => __( 'Tax rules enabled', 'dropproduct' ),
                 'done'   => $tax_ok,
-                'fix_url'=> admin_url( 'admin.php?page=wc-settings&tab=tax' ),
+                'fix_url'=> esc_url( admin_url( 'admin.php?page=wc-settings&tab=tax' ) ),
             ),
             array(
                 'key'    => 'products',
@@ -442,19 +460,19 @@ class DropProduct_Dashboard_Data
                     $product_count
                 ),
                 'done'   => $products_ok,
-                'fix_url'=> admin_url( 'admin.php?page=dropproduct' ),
+                'fix_url'=> esc_url( admin_url( 'admin.php?page=dropproduct' ) ),
             ),
             array(
                 'key'    => 'currency',
                 'label'  => __( 'Currency configured', 'dropproduct' ),
                 'done'   => $currency_ok,
-                'fix_url'=> admin_url( 'admin.php?page=wc-settings&tab=general' ),
+                'fix_url'=> esc_url( admin_url( 'admin.php?page=wc-settings&tab=general' ) ),
             ),
             array(
                 'key'    => 'address',
                 'label'  => __( 'Store address set', 'dropproduct' ),
                 'done'   => $address_ok,
-                'fix_url'=> admin_url( 'admin.php?page=wc-settings&tab=general' ),
+                'fix_url'=> esc_url( admin_url( 'admin.php?page=wc-settings&tab=general' ) ),
             ),
         );
 

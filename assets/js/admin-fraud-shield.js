@@ -57,6 +57,16 @@
 				}
 			});
 
+			// Toggle trusted-proxy list field opacity.
+			$('#dpshield-trust-proxy').on('change', function () {
+				var $field = $('#dpshield-trusted-proxies-field');
+				if ($(this).is(':checked')) {
+					$field.css({ opacity: '1', 'pointer-events': 'auto' });
+				} else {
+					$field.css({ opacity: '0.4', 'pointer-events': 'none' });
+				}
+			});
+
 			// Radio card selection visual feedback.
 			$('.dpshield-radio-group').on('change', 'input[type="radio"]', function () {
 				$(this).closest('.dpshield-radio-group').find('.dpshield-radio').removeClass('is-selected');
@@ -80,7 +90,12 @@
 			formData.push({ name: 'nonce',  value: dpShield.nonce });
 
 			// Checkboxes (unchecked ones are absent from serializeArray).
-			var checkboxes = ['enabled', 'enable_ip_country_check', 'enable_cod_restriction'];
+			var checkboxes = [
+				'enabled',
+				'enable_ip_country_check',
+				'enable_cod_restriction',
+				'trust_proxy_headers'
+			];
 			checkboxes.forEach(function (name) {
 				if (!$form.find('[name="' + name + '"]').is(':checked')) {
 					formData.push({ name: name, value: '' });
